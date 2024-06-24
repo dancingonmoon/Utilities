@@ -25,10 +25,14 @@ def geo_gen(
         .add_schema(
             maptype=region,
             label_opts=opts.LabelOpts(is_show=False, font_size=6),
+            # 地图区域的多边形 图形样式。
+            itemstyle_opts=opts.ItemStyleOpts(color=None,border_color=None),
+            # 高亮状态下的多边形样式
+            emphasis_itemstyle_opts=opts.ItemStyleOpts(),
         )
         .add(
             # 系列名称，用于 tooltip 的显示，legend 的图例筛选
-            series_name="城市名",
+            series_name="被观察的城市",
             # 数据项 (坐标点名称，坐标点值)
             data_pair=data_pair,
             type_=ChartType.EFFECT_SCATTER,
@@ -36,7 +40,7 @@ def geo_gen(
                 is_show=True,
             ),
             label_opts=opts.LabelOpts(
-                is_show=False,
+                is_show=True,
             ),
         )
         .set_series_opts(label_opts=opts.LabelOpts(is_show=False))
@@ -52,7 +56,7 @@ def geo_gen(
 if __name__ == "__main__":
     region = "china"
 
-    data_pair = [list(z) for z in zip(Faker.provinces, Faker.provinces)]
+    data_pair = [list(z) for z in zip(Faker.provinces, Faker.values())]
     print(data_pair)
     out = geo_gen(region, data_pair, geo_title="测试")
     out.render("geo_guangdong.html")
