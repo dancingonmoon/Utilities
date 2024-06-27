@@ -37,3 +37,5 @@ cursor.close()
 connection.close()
 
 # df.itertuples()
+
+df.to_sql()
