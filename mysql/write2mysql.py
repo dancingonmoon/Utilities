@@ -1,15 +1,36 @@
 import pandas as pd
 import mysql.connector
+import configparser
+
+def config_read(
+    config_path, section="DingTalkAPP_chatGLM", option1="Client_ID", option2=None
+):
+    """
+    option2 = None 时,仅输出第一个option1的值; 否则输出section下的option1与option2两个值
+    """
+    config = configparser.ConfigParser()
+    config.read(config_path, encoding="utf-8")
+    option1_value = config.get(section=section, option=option1)
+    if option2 is not None:
+        option2_value = config.get(section=section, option=option2)
+        return option1_value, option2_value
+    else:
+        return option1_value
+
 
 # 读取Excel文件
 excel_path = "L:\丁翊弘\高考\浙江省2023年普通高校招生普通类第一段平行投档分数线表.xlsx"
+
 df = pd.read_excel(excel_path)
 
 # MySQL数据库配置
+config_path = "E:/Python_WorkSpace/config/mysql.ini"
+user, pw = config_read(config_path,section='MySQL', option1='user', option2='password')
+database_name = 'gaokao_'
 config = {
     'host': 'localhost',
-    'user': 'your_username',
-    'password': 'your_password',
+    'user': user,
+    'password': pw,
     'database': 'your_database'
 }
 
