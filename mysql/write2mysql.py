@@ -1,5 +1,6 @@
 import pandas as pd
 import mysql.connector
+from mysql.connector import errorcode
 import configparser
 
 def config_read(
@@ -26,17 +27,26 @@ df = pd.read_excel(excel_path)
 # MySQL数据库配置
 config_path = "E:/Python_WorkSpace/config/mysql.ini"
 user, pw = config_read(config_path,section='MySQL', option1='user', option2='password')
-database_name = 'gaokao_'
+database = 'gaokao_stage1_score'
 config = {
     'host': 'localhost',
     'user': user,
     'password': pw,
-    'database': 'your_database'
+    'database': database
 }
 
-# 连接MySQL数据库
-connection = mysql.connector.connect(**config)
-cursor = connection.cursor()
+# 连接MySQL数据库, 并判断是否已经存在指定的database; 当错误,则返回错误值,退出程序;
+try:
+    connection = mysql.connector.connect(**config)
+    cursor = connection.cursor()
+    # cursor.execute(f"USE {database}") # 因为connection已经指定了database,所以此处不需要再use
+except mysql.connector.Error as err:
+    if err.errno == errorcode.ER_BAD_DB_ERROR:
+        print(f"Database '{database}' does not exist.")
+    else:
+        print(err.errno)
+    exit(1)
+
 
 # 获取Excel表格的列名
 columns = df.columns.values.tolist()
