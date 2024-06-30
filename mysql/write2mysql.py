@@ -2,6 +2,7 @@ import pandas as pd
 import mysql.connector
 from mysql.connector import errorcode
 import configparser
+import openpyxl
 
 def config_read(
     config_path, section="DingTalkAPP_chatGLM", option1="Client_ID", option2=None
@@ -106,8 +107,8 @@ def df_to_mysql(host='localhost', user:str='root', password=None, database:str=N
 
 if __name__ == '__main__':
     # 读取Excel文件
-    excel_path = "L:\丁翊弘\高考\浙江省2023年普通高校招生普通类第一段平行投档分数线表.xlsx"
-    df = pd.read_excel(excel_path)
+    excel_path = "L:\丁翊弘\高考\浙江省2021年普通高校招生普通类第一段平行投档分数线表.xls"
+    df = pd.read_excel(excel_path, ) # xls文件可以不需要engine(即engine=None,然而,xlsx文件需要engine='openpyxl')
     # df = df.fillna() # 缺失值空缺
 
     # MySQL数据库配置
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     # cursor.execute(create_table_query)
 
     # 将数据写入MySQL表
-    w2table = '2023'
+    w2table = '2021'
 
     # DataFrame写入MySQL数据库的某个Table
     df_to_mysql(df=df, w2table=w2table, **config)
