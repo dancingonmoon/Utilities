@@ -107,12 +107,13 @@ def df_to_mysql(host='localhost', user:str='root', password=None, database:str=N
 
 if __name__ == '__main__':
     # 读取Excel文件
-    excel_path = "L:\丁翊弘\高考\浙江省2021年普通高校招生普通类第一段平行投档分数线表.xls"
+    # excel_path = r"l:\丁翊弘\高考\浙江省2021年普通高校招生普通类第一段平行投档分数线表.xls"
+    excel_path = r"E:\Working Documents\装修\丁翊弘学习\高考\浙江省2018年普通高校招生普通类第一段平行投档分数线表.xls"
     df = pd.read_excel(excel_path, ) # xls文件可以不需要engine(即engine=None,然而,xlsx文件需要engine='openpyxl')
     # df = df.fillna() # 缺失值空缺
 
     # MySQL数据库配置
-    config_path = "l:/Python_WorkSpace/config/mysql.ini"
+    config_path = "e:/Python_WorkSpace/config/mysql.ini"
     user, pw = config_read(config_path,section='MySQL', option1='user', option2='password')
     database = 'gaokao_stage1_score'
     config = {
@@ -126,7 +127,7 @@ if __name__ == '__main__':
     # cursor.execute(create_table_query)
 
     # 将数据写入MySQL表
-    w2table = '2021'
+    w2table = '2018'
 
     # DataFrame写入MySQL数据库的某个Table
     df_to_mysql(df=df, w2table=w2table, **config)
