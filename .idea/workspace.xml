@@ -5,10 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b174db5b-96ae-4907-8f25-471a21839cd8" name="更改" comment="">
-      <change afterPath="$PROJECT_DIR$/mysql/column_semantic_mark.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mysql/mysql_handler.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mysql/write2mysql.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysql/AEFartek财务流水Excel读入Mysql.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mysql/column_semantic_mark.py" beforeDir="false" afterPath="$PROJECT_DIR$/mysql/column_semantic_mark.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,7 +48,7 @@
     "Python.mysql_handler.executor": "Debug",
     "Python.write2mysql.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "正在合并 master",
+    "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
@@ -100,12 +99,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mysql/column_semantic_mark.py</url>
-          <line>132</line>
+          <line>158</line>
           <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mysql/column_semantic_mark.py</url>
-          <line>114</line>
+          <line>140</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
