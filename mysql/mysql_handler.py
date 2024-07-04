@@ -4,6 +4,7 @@ from mysql.connector import errorcode
 import configparser
 import openpyxl
 
+
 def config_read(
     config_path, section="DingTalkAPP_chatGLM", option1="Client_ID", option2=None
 ):
@@ -20,17 +21,22 @@ def config_read(
         return option1_value
 
 
-
-def connect_mysql(host='localhost', user:str='root', password=None, database:str=None):
+def connect_mysql(
+    host="localhost", user: str = "root", password=None, database: str = None
+):
     """
     连接MySQL数据库, 当错误,则返回错误值,退出程序;
     return: connection
     """
     try:
-        connection = mysql.connector.connect(host=host, user=user, password=password, database=database)
+        connection = mysql.connector.connect(
+            host=host, user=user, password=password, database=database
+        )
         cursor = connection.cursor()
         if database is not None:
-            cursor.execute(f"USE {database}") # 通过USE database 是否错误,来判断是否已经存在指定的database;
+            cursor.execute(
+                f"USE {database}"
+            )  # 通过USE database 是否错误,来判断是否已经存在指定的database;
             cursor.close()
         return connection
     except mysql.connector.Error as err:
@@ -41,7 +47,9 @@ def connect_mysql(host='localhost', user:str='root', password=None, database:str
         return err
 
 
-def df_to_mysql_upon_connection(connection, df:pd.DataFrame, database:str, w2table:str):
+def df_to_mysql_upon_connection(
+    connection, df: pd.DataFrame, database: str, w2table: str
+):
     """
     将一个DataFrame写入MySQL数据库;1)表名,列名,全部加上了反引号;2)如果出现缺失值Nan,则转换成SQL的NULL；3)如果主键出现重复值,则跳过该行数据;
     connection: 连接到MySQL数据库的connection;connection = mysql.connector.connect(**config)
@@ -51,17 +59,17 @@ def df_to_mysql_upon_connection(connection, df:pd.DataFrame, database:str, w2tab
     """
     cursor = connection.cursor()
     rows_sum = 0
-    for row  in df.itertuples():
-        field_name = ', '.join([f'`{c}`' for c in row._fields])   # 列名需加反引号
+    for row in df.itertuples():
+        field_name = ", ".join([f"`{c}`" for c in row._fields])  # 列名需加反引号
         field_value = []
         for c in row:
-            if isinstance(c,str):
+            if isinstance(c, str):
                 field_value.append(f'"{c}"')  # 当字段值为字符串时,加上引号;
             elif pd.isna(c):
-                field_value.append('NULL') # 缺失值Nan时, 改成SQL可以识别的NULL,表示空值
+                field_value.append("NULL")  # 缺失值Nan时, 改成SQL可以识别的NULL,表示空值
             else:
-                field_value.append(f'{c}')
-        field_value = ', '.join(field_value)
+                field_value.append(f"{c}")
+        field_value = ", ".join(field_value)
         insert_query = f"""
                                 INSERT INTO {database}.`{w2table}`  
                                 ({field_name}) 
@@ -80,7 +88,9 @@ def df_to_mysql_upon_connection(connection, df:pd.DataFrame, database:str, w2tab
             else:
                 print(err.msg)
                 print(insert_query)
-                print(f"total {rows_sum} rows have been written into MySQL: {database}.{w2table}")
+                print(
+                    f"total {rows_sum} rows have been written into MySQL: {database}.{w2table}"
+                )
                 # 关闭连接
                 cursor.close()
             break
@@ -89,14 +99,24 @@ def df_to_mysql_upon_connection(connection, df:pd.DataFrame, database:str, w2tab
     # 关闭连接
     cursor.close()
 
-def df_to_mysql(host='localhost', user:str='root', password=None, database:str=None, df:pd.DataFrame=None, w2table:str=None):
+
+def df2mysql(
+    host="localhost",
+    user: str = "root",
+    password=None,
+    database: str = None,
+    df: pd.DataFrame = None,
+    w2table: str = None,
+):
     """
     A:新建一个MySQL的连接, 当连接错误,或者Database不存在,退出;
     B: 将一个DataFrame写入MySQL数据库;1)表名,列名,全部加上了反引号;2)如果出现缺失值Nan,则转换成SQL的NULL；3)如果主键出现重复值,则跳过该行数据;
     database: 写入的数据库名;
     w2table: 写入的表名;
     """
-    connection = connect_mysql(host=host, user=user, password=password, database=database)
+    connection = connect_mysql(
+        host=host, user=user, password=password, database=database
+    )
     if isinstance(connection, mysql.connector.Error):
         print(connection)
         return connection
@@ -105,29 +125,97 @@ def df_to_mysql(host='localhost', user:str='root', password=None, database:str=N
     connection.close()
 
 
-if __name__ == '__main__':
+def mysql2df(
+    host="localhost",
+    user: str = "root",
+    password=None,
+    database: str = None,
+    table: str = None,
+):
+    """
+    从Mysql中读出指定database,指定的table,将table转化成DataFrame
+    :param host:
+    :param user:
+    :param password:
+    :return:
+    """
+    connection = connect_mysql(
+        host=host, user=user, password=password, database=database
+    )
+    if isinstance(connection, mysql.connector.Error):
+        print(connection)
+        return connection
+
+    # 获得table全部列名,定义DataFrame:
+    describe_query = f"""
+                    DESCRIBE {database}.`{table}`; 
+                    """
+    cursor = connection.cursor()
+    try:
+        cursor.execute(describe_query)
+        # SELECT无需提交事务,否则commit后,cursor内容清楚
+        # connection.commit()
+    except mysql.connector.Error as err:
+        print(err.msg)
+        print(describe_query)
+
+    # 读出每行:
+    columns = [c[0] for c in cursor]
+    # 定义空DataFrame:
+    df = pd.DataFrame(columns=columns)
+
+    # mysql: SELECT * FROM database.`table`
+    select_query = f"""
+                    SELECT * FROM {database}.`{table}`; 
+                    """
+    try:
+        cursor.execute(select_query)
+        # SELECT无需提交事务,否则commit后,cursor内容清楚
+        # connection.commit()
+    except mysql.connector.Error as err:
+        print(err.msg)
+        print(select_query)
+
+    # 读出每行,写入DataFrame:
+    row_sum = 0
+    for row in cursor:
+        df.loc[len(df)] = row
+        row_sum += 1
+
+    print(f"total {row_sum} read from {database}.{table}")
+    # 关闭连接
+    cursor.close()
+
+    return df
+
+
+if __name__ == "__main__":
+
     # 读取Excel文件
     # excel_path = r"l:\丁翊弘\高考\浙江省2021年普通高校招生普通类第一段平行投档分数线表.xls"
     excel_path = r"E:\Working Documents\装修\丁翊弘学习\高考\浙江省2018年普通高校招生普通类第一段平行投档分数线表.xls"
-    df = pd.read_excel(excel_path, ) # xls文件可以不需要engine(即engine=None,然而,xlsx文件需要engine='openpyxl')
+    df = pd.read_excel(
+        excel_path,
+    )  # xls文件可以不需要engine(即engine=None,然而,xlsx文件需要engine='openpyxl')
     # df = df.fillna() # 缺失值空缺
 
     # MySQL数据库配置
     config_path = "e:/Python_WorkSpace/config/mysql.ini"
-    user, pw = config_read(config_path,section='MySQL', option1='user', option2='password')
-    database = 'gaokao_stage1_score'
-    config = {
-        'host': 'localhost',
-        'user': user,
-        'password': pw,
-        'database': database
-    }
+    user, pw = config_read(
+        config_path, section="MySQL", option1="user", option2="password"
+    )
+    database = "gaokao_stage1_score"
+    config = {"host": "localhost", "user": user, "password": pw, "database": database}
     # 创建MySQL表（如果需要）
     # create_table_query = f"CREATE TABLE {df.index.name} ({', '.join([f'{col} VARCHAR(255)' for col in columns])});"
     # cursor.execute(create_table_query)
 
     # 将数据写入MySQL表
-    w2table = '2018'
+    w2table = "2018"
 
     # DataFrame写入MySQL数据库的某个Table
-    df_to_mysql(df=df, w2table=w2table, **config)
+    # df2mysql(df=df, w2table=w2table, **config)
+
+    # 读出指定database.table, 写入DataFrame:
+    read_table = "2023"
+    df_r = mysql2df(table=read_table, **config)
