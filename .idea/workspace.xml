@@ -5,8 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b174db5b-96ae-4907-8f25-471a21839cd8" name="更改" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/Utilities.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Utilities.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mysql/AEFartek财务流水Excel读入Mysql.ipynb" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/mysql/column_semantic_mark.py" beforeDir="false" afterPath="$PROJECT_DIR$/mysql/column_semantic_mark.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -44,7 +45,7 @@
     "Python.ExcelColumnTranslate.executor": "Run",
     "Python.MarketingMapTools.executor": "Run",
     "Python._http_client.executor": "Debug",
-    "Python.column_semantic_mark.executor": "Run",
+    "Python.column_semantic_mark.executor": "Debug",
     "Python.mysql_handler.executor": "Debug",
     "Python.write2mysql.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -99,12 +100,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mysql/column_semantic_mark.py</url>
-          <line>158</line>
+          <line>235</line>
           <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mysql/column_semantic_mark.py</url>
-          <line>140</line>
+          <line>216</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
