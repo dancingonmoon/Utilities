@@ -3,14 +3,20 @@ import mysql.connector
 from mysql.connector import errorcode
 import configparser
 import openpyxl
+import os
 
 
 def config_read(
     config_path, section="DingTalkAPP_chatGLM", option1="Client_ID", option2=None
 ):
     """
-    option2 = None 时,仅输出第一个option1的值; 否则输出section下的option1与option2两个值
+    option2 = None 时,仅输出第一个option1的值; 否则输出section下的option1与option2两个值;
+    增加了config_path是否存在的检验;
     """
+    # 检验config_path是否存在
+    if os.path.exists(config_path) is False:
+        print(f"config_path: {config_path} doesn't exist, pls double check the config_path")
+        exit(111) # 结束进程,退出代码为111, (111为自定义的退出代码,可以根据需要修改)
     config = configparser.ConfigParser()
     config.read(config_path, encoding="utf-8")
     option1_value = config.get(section=section, option=option1)
@@ -193,7 +199,7 @@ if __name__ == "__main__":
 
     # 读取Excel文件
     # excel_path = r"l:\丁翊弘\高考\浙江省2021年普通高校招生普通类第一段平行投档分数线表.xls"
-    excel_path = r"E:\Working Documents\装修\丁翊弘学习\高考\浙江省2018年普通高校招生普通类第一段平行投档分数线表.xls"
+    excel_path = r"l:\Working Documents\装修\丁翊弘学习\高考\浙江省2018年普通高校招生普通类第一段平行投档分数线表.xls"
     df = pd.read_excel(
         excel_path,
     )  # xls文件可以不需要engine(即engine=None,然而,xlsx文件需要engine='openpyxl')
