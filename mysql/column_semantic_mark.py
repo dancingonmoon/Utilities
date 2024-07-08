@@ -273,9 +273,13 @@ if __name__ == "__main__":
     # Step 0: df1与df2相互进行query并生成index,score列; 即: a)去年做query, 生成index_OldQ_NewL, score_OldQ_NewL;b)今年做query,生成index_NewQ_OldL
     # Step 1: 去年(旧年)做Query的index时, 今年(新年)有同学校的某一个专业为去年(旧年)合并而来;解决: groupby(semantic_index!=-1).sum()
     index_semantic_column = f"index_{df1_shortname}Q{df2_shortname}L"
+    score_semantic_column = f"score_{df1_shortname}Q{df2_shortname}L"
+
     combine = pd.read_excel(df1_outPath, nrows=100)
 
     combine[index_semantic_column] = combine[index_semantic_column].apply(lambda x: np.nan if x==-1 else x)
     grouped =combine.groupby(by=["学校代号","专业代号",index_semantic_column],sort=False,dropna=True)
-    result = grouped.agg()
+    result = grouped.agg({'计划数':np.sum,
+                          '分数线': lambda x: int(x.mean()),
+                          '位次': lambda x: int(x.mean())})
 
