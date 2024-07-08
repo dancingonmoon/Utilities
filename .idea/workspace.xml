@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b174db5b-96ae-4907-8f25-471a21839cd8" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/Utilities.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Utilities.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mysql/column_semantic_mark.py" beforeDir="false" afterPath="$PROJECT_DIR$/mysql/column_semantic_mark.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,20 +38,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.ExcelColumnTranslate.executor": "Run",
-    "Python.MarketingMapTools.executor": "Run",
-    "Python._http_client.executor": "Debug",
-    "Python.column_semantic_mark.executor": "Debug",
-    "Python.mysql_handler.executor": "Debug",
-    "Python.write2mysql.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.ExcelColumnTranslate.executor&quot;: &quot;Run&quot;,
+    &quot;Python.MarketingMapTools.executor&quot;: &quot;Run&quot;,
+    &quot;Python._http_client.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.column_semantic_mark.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.mysql_handler.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.write2mysql.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -100,13 +98,18 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mysql/column_semantic_mark.py</url>
-          <line>235</line>
+          <line>192</line>
           <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mysql/column_semantic_mark.py</url>
-          <line>216</line>
+          <line>172</line>
           <option name="timeStamp" value="11" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/mysql/column_semantic_mark.py</url>
+          <line>182</line>
+          <option name="timeStamp" value="12" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
