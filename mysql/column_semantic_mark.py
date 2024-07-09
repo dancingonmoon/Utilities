@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
     start_time = time.time()
     for u in university_arr:
-        if u in df1_university_arr:
+        if u in df1_university_arr: # 排除不存在的univeristy导致query为[]
             df_query = mark_semantic_index(
             df1,
             df2,
