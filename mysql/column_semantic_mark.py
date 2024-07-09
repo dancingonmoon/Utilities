@@ -7,6 +7,7 @@ from zhipuai import ZhipuAI
 from typing import Union, List
 from mysql_handler import config_read
 import os
+import time
 
 
 def semantic_batch_search(
@@ -94,7 +95,7 @@ def semantic_batch_search(
     if (
         isinstance(query, str)
         or (isinstance(query, np.ndarray) and np.ndim(query) == 1)
-        or (isinstance(query, list) and all(isinstance(x, (int, float)) for x in query))
+        or (isinstance(query, list) and all(isinstance(x, (int, float)) for x in query) )
     ):
         # 当query 字符串时 向量化
         if isinstance(query, str):
@@ -225,43 +226,50 @@ if __name__ == "__main__":
     )
     zhipuai_client = ZhipuAI(api_key=zhipu_apiKey)
     # 定义文件名称:
-    df1_shortname = "2022"
-    df2_shortname = "2021"
+    df1_shortname = "2019"
+    df2_shortname = "2018"
     excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.xls"
     # excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.xls"
     df1_excelPath = excel_path_base.format(df1_shortname)
     df2_excelPath = excel_path_base.format(df2_shortname)
     df1_outPath = os.path.splitext(df1_excelPath)[0] + ".xlsx"
     df2_outPath = os.path.splitext(df2_excelPath)[0] + '.xlsx'
-    # # 读取Excel文件
-    # df1 = pd.read_excel(df1_excelPath)
-    # df2 = pd.read_excel(df2_excelPath)
-    # # 语义比较,并Mark匹配index
-    # university_list = df1["学校代号"].unique()
-    #
-    # for u in university_list:
-    #     df_query = mark_semantic_index(
-    #         df1,
-    #         df2,
-    #         university_code=u,
-    #         zhipuai_client=zhipuai_client,
-    #         index_semantic_column=f"index_{df1_shortname}Q{df2_shortname}L",
-    #         score_semantic_column=f"score_{df1_shortname}Q{df2_shortname}L",
-    #     )
-    #     print(f"{df1_shortname}->{df2_shortname}: university_code:{u}, completed.")
-    #     df_list = mark_semantic_index(
-    #         df2,
-    #         df1,
-    #         university_code=u,
-    #         zhipuai_client=zhipuai_client,
-    #         index_semantic_column=f"index_{df2_shortname}Q{df1_shortname}L",
-    #         score_semantic_column=f"score_{df2_shortname}Q{df1_shortname}L",
-    #     )
-    #     print(f"{df2_shortname}->{df1_shortname}: university_code:{u}, completed.")
-    #
-    # sheetName = "semantic"
-    # df_query.to_excel(df1_outPath, sheet_name=sheetName, index=False, na_rep="")
-    # df_list.to_excel(df2_outPath, sheet_name=sheetName, index=False, na_rep="")
+    # 读取Excel文件
+    df1 = pd.read_excel(df1_excelPath)
+    df2 = pd.read_excel(df2_excelPath)
+    # 语义比较,并Mark匹配index
+    df1_university_arr = df1["学校代号"].unique()
+    df2_university_arr = df2["学校代号"].unique()
+    university_arr = pd.unique(np.r_[df1_university_arr, df2_university_arr])
+
+    start_time = time.time()
+    for u in university_arr:
+        if u in df1_university_arr:
+            df_query = mark_semantic_index(
+            df1,
+            df2,
+            university_code=u,
+            zhipuai_client=zhipuai_client,
+            index_semantic_column=f"index_{df1_shortname}Q{df2_shortname}L",
+            score_semantic_column=f"score_{df1_shortname}Q{df2_shortname}L",
+        )
+            print(f"{df1_shortname}->{df2_shortname}: university_code:{u}, completed.")
+        if u in df2_university_arr:
+            df_list = mark_semantic_index(
+            df2,
+            df1,
+            university_code=u,
+            zhipuai_client=zhipuai_client,
+            index_semantic_column=f"index_{df2_shortname}Q{df1_shortname}L",
+            score_semantic_column=f"score_{df2_shortname}Q{df1_shortname}L",
+        )
+            print(f"{df2_shortname}->{df1_shortname}: university_code:{u}, completed.")
+
+    time_assumed = time.time()-start_time
+    print(f"{df1_shortname}<->{df2_shortname} both spent {time_assumed/60:.2f}min ")
+    sheetName = "semantic"
+    df_query.to_excel(df1_outPath, sheet_name=sheetName, index=False, na_rep="")
+    df_list.to_excel(df2_outPath, sheet_name=sheetName, index=False, na_rep="")
 
     # 发现:
     # 2022年与2021年语义比较:
@@ -270,16 +278,29 @@ if __name__ == "__main__":
     # Step2: 2022做Query, 同学校有几个专业自2021年拆解而来;解决: 1) 按照"学校代号""专业代号""semantic_index"三者条件,读取2021合并表后的对应的semantic_index对应的序列,获得二次合并表;
     # Step3: 2) 二次合并后的2022/2021表,再对同学校同专业同semantic_index进行groupby,然后对分组后的计划数加和,分数线mean,位次mean.
 
-    # Step 0: df1与df2相互进行query并生成index,score列; 即: a)去年做query, 生成index_OldQ_NewL, score_OldQ_NewL;b)今年做query,生成index_NewQ_OldL
-    # Step 1: 去年(旧年)做Query的index时, 今年(新年)有同学校的某一个专业为去年(旧年)合并而来;解决: groupby(semantic_index!=-1).sum()
-    index_semantic_column = f"index_{df1_shortname}Q{df2_shortname}L"
-    score_semantic_column = f"score_{df1_shortname}Q{df2_shortname}L"
+    # # Step 0: df1与df2相互进行query并生成index,score列; 即: a)去年做query, 生成index_OldQ_NewL, score_OldQ_NewL;b)今年做query,生成index_NewQ_OldL
+    # # Step 1: 去年(旧年)做Query的index时, 今年(新年)有同学校的某一个专业为去年(旧年)合并而来;解决: groupby(semantic_index!=-1).agg()
+    # index_semantic_column = f"index_{df1_shortname}Q{df2_shortname}L"
+    # score_semantic_column = f"score_{df1_shortname}Q{df2_shortname}L"
+    #
+    # combine = pd.read_excel(df1_outPath, nrows=100)
+    #
+    # combine[index_semantic_column] = combine[index_semantic_column].apply(lambda x: np.nan if x==-1 else x)
+    # grouped =combine.groupby(by=["学校代号",index_semantic_column],sort=False,dropna=True)
+    # # 使用字典对每列定义函数:
+    # result = grouped.agg({'学校名称': lambda x: x,
+    #                       '专业名称': lambda x: x,
+    #                       '专业代号': lambda x: x,
+    #                       '计划数': lambda x: int(x.sim()),
+    #                       '分数线': lambda x: int(x.mean()),
+    #                       '位次': lambda x : int(x.mean()),
+    #                      score_semantic_column : 'min'}).reset_index()
+    # #或使用,pd.NamedAgg: 优点,可以直接定义更改后的列名
+    # result_ = grouped.agg(**{'平均分数线':('分数线', 'mean'),
+    #                          '平均位次':('位次','mean')})
+    # print(result)
+    #
+    # # Step2: 今年(新年)做Query,去年(旧年)做List,今年有几个专业是由去年某个专业拆解而来;解决: pd.concat()
+    # pd.merge(df1, df2, left_on=['学校代号',index_semantic_column], right_on=['学校代号',index_semantic_column], how='outer')
 
-    combine = pd.read_excel(df1_outPath, nrows=100)
-
-    combine[index_semantic_column] = combine[index_semantic_column].apply(lambda x: np.nan if x==-1 else x)
-    grouped =combine.groupby(by=["学校代号","专业代号",index_semantic_column],sort=False,dropna=True)
-    result = grouped.agg({'计划数':np.sum,
-                          '分数线': lambda x: int(x.mean()),
-                          '位次': lambda x: int(x.mean())})
 
