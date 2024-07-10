@@ -294,6 +294,27 @@ def df2Excel_SemanticIndex(
     df_list.to_excel(df2_outPath, sheet_name=sheet_name, index=False, na_rep="")
 
 
+def recover_major(df1_x:pd.Series, df1_index_semantic_column, df2:pd.DataFrame, ):
+    """
+    用于apply函数:
+    将df1的每一行:df1_x,读出df1_index_semantic, 找到df2对应学校代号下的指定index的专业名称,再输出
+    :param df1_x: pd.Series; df1的行
+    :param df2: pd.DataFrame; df2
+    :param index_semantic_column: df1对应的df1_index_semantic_column列名
+    :return: str; 专业名称
+    """
+    major_arr = df2[df2['学校代号'] == df1_x['学校代号']]['专业名称'].values #pd.Series转换成ndarry
+    if major_arr.size == 0 or major_arr is None:
+        major = ""
+    else:
+        index = df1_x[df1_index_semantic_column]
+        if index != -1 and index != np.NAN:
+            major = major_arr[index]
+        else:
+            major = ''
+    return major
+
+
 if __name__ == "__main__":
     # 准备zhipuai client:
     config_path_zhipuai = r"e:/Python_WorkSpace/config/zhipuai_SDK.ini"
@@ -337,24 +358,7 @@ if __name__ == "__main__":
         df2_outPath,
     )
     # 增加一列还原index_semantic对应的专业名称
-    def recover_major(df1_x:pd.Series, df1_index_semantic_column, df2:pd.DataFrame, ):
-        """
-        将df1的每一行:df1_x,读出df1_index_semantic, 找到df2对应学校代号下的指定index的专业名称,再输出
-        :param df1_x: pd.Series; df1的行
-        :param df2: pd.DataFrame; df2
-        :param index_semantic_column: df1对应的df1_index_semantic_column列名
-        :return: str; 专业名称
-        """
-        major_arr = df2[df2['学校代号'] == df1_x['学校代号']]['专业名称'].values #pd.Series转换成ndarry
-        if major_arr.size == 0 or major_arr is None:
-            major = ""
-        else:
-            index = df1_x[df1_index_semantic_column]
-            if index != -1 and index != np.NAN:
-                major = major_arr[index]
-            else:
-                major = ''
-        return major
+
     df2[f'{df1_shortname}专业名称'] = df2.apply(recover_major,args=(df1,),axis=1)
     df1[f'{df2_shortname}专业名称'] = df1.apply(recover_major,args=(df2,),axis=1)
 
