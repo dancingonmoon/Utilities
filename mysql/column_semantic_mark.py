@@ -8,6 +8,7 @@ from typing import Union, List
 from mysql_handler import config_read
 import os
 import time
+from openpyxl import load_workbook
 
 
 def semantic_batch_search(
@@ -350,28 +351,30 @@ if __name__ == "__main__":
 
     # # Step 0: df1与df2相互进行query并生成index,score列; 即: a)去年做query, 生成index_OldQ_NewL, score_OldQ_NewL;b)今年做query,生成index_NewQ_OldL
     # # Step 1: 去年(旧年)做Query的index时, 今年(新年)有同学校的某一个专业为去年(旧年)合并而来;解决: groupby(semantic_index!=-1).agg()
-    index_semantic_column = f"index_{df2_shortname}Q{df1_shortname}L"
-    score_semantic_column = f"score_{df2_shortname}Q{df1_shortname}L"
+    df1_index_semantic_column = f"index_{df1_shortname}Q{df2_shortname}L"
+    df1_score_semantic_column = f"score_{df1_shortname}Q{df2_shortname}L"
+
+    df2_index_semantic_column = f"index_{df2_shortname}Q{df1_shortname}L"
+    df2_score_semantic_column = f"score_{df2_shortname}Q{df1_shortname}L"
 
     df1 = pd.read_excel(df1_outPath)
     df2 = pd.read_excel(
         df2_outPath,
     )
     # 增加一列还原index_semantic对应的专业名称
-
-    df2[f'{df1_shortname}专业名称'] = df2.apply(recover_major,args=(df1,),axis=1)
-    df1[f'{df2_shortname}专业名称'] = df1.apply(recover_major,args=(df2,),axis=1)
+    df2[f'{df1_shortname}专业名称'] = df2.apply(recover_major,args=(df2_index_semantic_column,df1),axis=1)
+    df1[f'{df2_shortname}专业名称'] = df1.apply(recover_major,args=(df1_index_semantic_column,df2),axis=1)
 
     # print(df1, df2)
 
-    df2[index_semantic_column] = df2[index_semantic_column].apply(
+    df2[df2_index_semantic_column] = df2[df2_index_semantic_column].apply(
         lambda x: np.nan if x == -1 else x
     ) # -1转化为Nan,因为agg()不对Nan进行计算
-    grouped = df2.groupby(
-        by=["学校代号", index_semantic_column], sort=False, dropna=False
+    grouped_df21 = df2.groupby(
+        by=["学校代号", df2_index_semantic_column], sort=False, dropna=False
     ) # dropna=False 保留Nan行
     # 使用字典对每列定义函数:
-    result = grouped.agg(
+    combine = grouped_df21.agg(
         {
             "学校名称": lambda x: x,
             "专业名称": lambda x: x,
@@ -379,11 +382,12 @@ if __name__ == "__main__":
             "计划数": lambda x: int(x.sum()),
             "分数线": lambda x: int(x.mean()),
             "位次": lambda x: int(x.mean()),
-            score_semantic_column: "min",
+            df2_score_semantic_column: "min",
+            f'{df1_shortname}专业名称': lambda x: x
         }
     ).reset_index()
     # #或使用,pd.NamedAgg: 优点,可以直接定义更改后的列名
-    # result_ = grouped.agg(**{'平均分数线':('分数线', 'mean'),
+    # combine_ = grouped.agg(**{'平均分数线':('分数线', 'mean'),
     #                          '平均位次':('位次','mean')})
     # 列排序:
     columns = [
@@ -394,12 +398,22 @@ if __name__ == "__main__":
         "计划数",
         "分数线",
         "位次",
-        index_semantic_column,
-        score_semantic_column,
+        df2_index_semantic_column,
+        df2_score_semantic_column,
+        f'{df1_shortname}专业名称',
     ]
-    result = result[columns[:]]
+    combine = combine[columns[:]]
     sheet_name = 'combine'
-    result.to_excel(df2_outPath, sheet_name=sheet_name, index=False, na_rep="")
+
+    # pd.to_excel(df2_outPath, )会导致excel原有的sheet的数据都丢失;这里使用仅仅写入,workbook[sheet_name],而保留原有的任何sheets
+    # 加载Excel表:
+    workbook = load_workbook(df2_outPath)
+    # 创建一个新的工作表:
+    if sheet_name not in workbook.sheetnames:
+        workbook.create_sheet(sheet_name)
+    else:
+        print(f"Sheet {sheet_name} already exists in the workbook")
+    combine.to_excel(workbook[sheet_name], index=False, na_rep="")
     #
     # # Step2: 今年(新年)做Query,去年(旧年)做List,今年有几个专业是由去年某个专业拆解而来;解决: pd.concat()
     # pd.merge(df1, df2, left_on=['学校代号',index_semantic_column], right_on=['学校代号',index_semantic_column], how='outer')
