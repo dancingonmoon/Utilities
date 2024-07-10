@@ -317,7 +317,7 @@ def recover_major(df1_x:pd.Series, df1_index_semantic_column, df2:pd.DataFrame, 
 
 if __name__ == "__main__":
     # 准备zhipuai client:
-    config_path_zhipuai = r"e:/Python_WorkSpace/config/zhipuai_SDK.ini"
+    config_path_zhipuai = r"l:/Python_WorkSpace/config/zhipuai_SDK.ini"
     zhipu_apiKey = config_read(
         config_path_zhipuai, section="zhipuai_SDK_API", option1="api_key"
     )
@@ -325,8 +325,8 @@ if __name__ == "__main__":
     # 定义文件名称:
     df1_shortname = "2019"
     df2_shortname = "2018"
-    excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.xls"
-    # excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.xls"
+    # excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.xls"
+    excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.xls"
     df1_excelPath = excel_path_base.format(df1_shortname)
     df2_excelPath = excel_path_base.format(df2_shortname)
     df1_outPath = os.path.splitext(df1_excelPath)[0] + ".xlsx"
