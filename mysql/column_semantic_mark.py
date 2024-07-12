@@ -219,7 +219,9 @@ def mark_semantic_index(
 def df2Excel_SemanticIndex(
     zhipuai_client,
     df1_excelPath,
+        df1_sheetName,
     df2_excelPath,
+        df2_sheetName,
     df1_outPath,
     df2_outPath,
     sheet_name="semantic",
@@ -235,30 +237,36 @@ def df2Excel_SemanticIndex(
     :param df2_excelPath:
     :param df1_outPath:
     :param df2_outPath:
+    :param sheet_name:
     :return: 写入excel文件,无返回;
     """
-    path_list = [df1_excelPath, df2_excelPath , df1_outPath,    df2_outPath,]
+    path_list = [df1_excelPath, df2_excelPath ]
     # 检查文件是否存在，并且具有写权限
     for path in path_list:
         if not os.path.exists(path):
             print(f"{path},文件不存在")
-            return
+            return exit(1)
         if not os.access(path, os.W_OK):
             print(f"{path},无写权限.")
-            return
+            return exit(1)
     # 检查xlsx文件是否已经有临时文件打开,从而判断是否EXCEL文件已经打开:
     path_list = [df1_outPath,df2_outPath]
     for path in path_list:
+        if not os.path.exists(path):
+            pass
+        if not os.access(path, os.W_OK):
+            print(f"{path},无写权限.")
+            return exit(1)
         dirname, filename = os.path.split(path)
         filename = "~$".join(["", filename])
         temp_path = os.path.join(dirname, filename)
         if os.path.exists(temp_path):
             print(f"{path},文件已经打开,禁止写入.")
-            return
+            return exit(1)
 
     # 取Excel文件
-    df1 = pd.read_excel(df1_excelPath)
-    df2 = pd.read_excel(df2_excelPath)
+    df1 = pd.read_excel(df1_excelPath,sheet_name=df1_sheetName)
+    df2 = pd.read_excel(df2_excelPath,sheet_name=df2_sheetName)
     # 对每个df中每个学校代号,语义比较,并Mark匹配index;两张表,互相比较;
     df1_university_arr = df1["学校代号"].unique()
     df2_university_arr = df2["学校代号"].unique()
@@ -289,9 +297,22 @@ def df2Excel_SemanticIndex(
 
     time_assumed = time.time() - start_time
     print(f"{df1_shortname}<->{df2_shortname} both spent {time_assumed/60:.2f}min ")
-    # sheetName = "semantic"
-    df_query.to_excel(df1_outPath, sheet_name=sheet_name, index=False, na_rep="")
-    df_list.to_excel(df2_outPath, sheet_name=sheet_name, index=False, na_rep="")
+
+    if os.path.exists(df1_outPath):
+        # mode='append',避免原有的sheet表中数据被清除;
+        with pd.ExcelWriter(df1_outPath, mode="a", if_sheet_exists='replace', engine='openpyxl') as writer:
+            df_query.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
+    else: # 新建文件并写入
+        with pd.ExcelWriter(df1_outPath, mode="w", engine='openpyxl') as writer:
+            df_query.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
+
+    if os.path.exists(df2_outPath):
+        # mode='append',避免原有的sheet表中数据被清除;
+        with pd.ExcelWriter(df2_outPath, mode="a", if_sheet_exists='replace', engine='openpyxl') as writer:
+            df_list.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
+    else:
+        with pd.ExcelWriter(df2_outPath, mode="w", engine='openpyxl') as writer:
+            df_list.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
 
 
 def recover_major(df1_x:pd.Series, df1_index_semantic_column, df2:pd.DataFrame, recover_type:str='name'):
@@ -326,23 +347,26 @@ if __name__ == "__main__":
     )
     zhipuai_client = ZhipuAI(api_key=zhipu_apiKey)
     # 定义文件名称:
-    df1_shortname = "2019"
-    df2_shortname = "2018"
-    excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.xls"
-    # excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.xls"
-    df1_excelPath = excel_path_base.format(df1_shortname)
-    df2_excelPath = excel_path_base.format(df2_shortname)
+    df1_shortname = "2020" # 今年/新年
+    df2_shortname = "2019" # 去年/旧年
+    excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    # excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    df1_excelPath = excel_path_base.format(df1_shortname,'xls')
+    df1_sheetName = "浙江省2020年普通类第一段平行投档分数线表"
+    df2_excelPath = excel_path_base.format(df2_shortname,'xlsx')
+    df2_sheetName = f"combine{df2_shortname}"
     df1_outPath = os.path.splitext(df1_excelPath)[0] + ".xlsx"
     df2_outPath = os.path.splitext(df2_excelPath)[0] + ".xlsx"
 
-    # # df1,df2,相互检索对方,对每个大学,匹配专业代号,写入excel文件:
-    # df2mark_Excelout(zhipuai_client=zhipuai_client,
-    #                  df1_excelPath=df1_excelPath,
-    #                  df2_excelPath=df2_excelPath,
-    #                  df1_outPath=df1_outPath,
-    #                  df2_outPath=df2_outPath,
-    #                  sheet_name="semantic"
-    #                  )
+    # df1,df2,相互检索对方,对每个大学,匹配专业代号,写入excel文件:
+    df2Excel_SemanticIndex(zhipuai_client=zhipuai_client,
+                     df1_excelPath=df1_excelPath,
+                    df1_sheetName=df1_sheetName,
+                     df2_excelPath=df2_excelPath,
+                    df2_sheetName=df2_sheetName,
+                     df1_outPath=df1_outPath,
+                     df2_outPath=df2_outPath,
+                     sheet_name="semantic")
 
     # 发现:
     # 2022年与2021年语义比较:
@@ -355,20 +379,21 @@ if __name__ == "__main__":
     # # Step 1: 去年(旧年)做Query的index时, 今年(新年)有同学校的某一个专业为去年(旧年)合并而来;解决: groupby(semantic_index!=-1).agg()
     df1_index_semantic_column = f"index_{df1_shortname}Q{df2_shortname}L"
     df1_score_semantic_column = f"score_{df1_shortname}Q{df2_shortname}L"
+    df1_sheetName = 'semantic'
 
     df2_index_semantic_column = f"index_{df2_shortname}Q{df1_shortname}L"
     df2_score_semantic_column = f"score_{df2_shortname}Q{df1_shortname}L"
+    df2_sheetName = 'semantic'
 
-    df1 = pd.read_excel(df1_outPath)
-    df2 = pd.read_excel(
-        df2_outPath,
-    )
+    # sheet_name不指定,读第一个sheet;None:读所有的sheets,以字典输出;
+    df1 = pd.read_excel(df1_outPath,sheet_name=df1_sheetName)
+    df2 = pd.read_excel(df2_outPath, sheet_name=df2_sheetName)
     # 增加一列还原index_semantic对应的专业名称,便于观察语义匹配;
-    df2[f'{df1_shortname}专业名称源自{df2_shortname}'] = df2.apply(recover_major,args=(df2_index_semantic_column,df1,'name'),axis=1)
-    df1[f'{df2_shortname}专业名称源自{df1_shortname}'] = df1.apply(recover_major,args=(df1_index_semantic_column,df2,'name'),axis=1)
+    df2[f'{df1_shortname}版专业名称_{df2_shortname}专业'] = df2.apply(recover_major,args=(df2_index_semantic_column,df1,'name'),axis=1)
+    df1[f'{df2_shortname}版专业名称_{df1_shortname}专业'] = df1.apply(recover_major,args=(df1_index_semantic_column,df2,'name'),axis=1)
     # 由于每年的专业代号在增减专业后,会重新编号,所以需要以新年(今年)的专业代号为基准,统一今年/旧年的专业代号,才可以合并,今年与旧年的表格
-    df2[f'{df1_shortname}专业代号'] = df2.apply(recover_major, args=(df2_index_semantic_column, df1, 'code'), axis=1)
-    df1[f'{df2_shortname}专业代号'] = df1.apply(recover_major, args=(df1_index_semantic_column, df2, 'code'), axis=1)
+    df2[f'{df1_shortname}版专业代号_{df2_shortname}专业'] = df2.apply(recover_major, args=(df2_index_semantic_column, df1, 'code'), axis=1)
+    df1[f'{df2_shortname}版专业代号_{df1_shortname}专业'] = df1.apply(recover_major, args=(df1_index_semantic_column, df2, 'code'), axis=1)
     # print(df1, df2)
 
     df2[df2_index_semantic_column] = df2[df2_index_semantic_column].apply(
@@ -387,8 +412,8 @@ if __name__ == "__main__":
             "分数线": lambda x: int(x.mean()),
             "位次": lambda x: int(x.mean()),
             df2_score_semantic_column: "min",
-            f'{df1_shortname}专业名称': lambda x: x,
-            f'{df1_shortname}专业代号': 'first',
+            f'{df1_shortname}版专业名称_{df2_shortname}专业': lambda x: x,
+            f'{df1_shortname}版专业代号_{df2_shortname}专业': 'first',
         }
     ).reset_index()
     # #或使用,pd.NamedAgg: 优点,可以直接定义更改后的列名
@@ -399,9 +424,9 @@ if __name__ == "__main__":
         "学校代号",
         "学校名称",
         "专业代号",
-        f'{df1_shortname}专业代号',
+        f'{df1_shortname}版专业代号_{df2_shortname}专业',
         "专业名称",
-        f'{df1_shortname}专业名称',
+        f'{df1_shortname}版专业名称_{df2_shortname}专业',
         "计划数",
         "分数线",
         "位次",
@@ -411,23 +436,32 @@ if __name__ == "__main__":
 
     combine_oldyear = combine_oldyear[columns[:]]
 
-    # # pd.to_excel(df2_outPath, )会导致excel原有的sheet的数据都丢失;需要通过pd.ExcelWriter(mode='append')
-    # with pd.ExcelWriter(df2_outPath, mode='a', if_sheet_exists='replace',engine="openpyxl") as writer:
-    #     combine_oldyear.to_excel(writer, sheet_name=f'temp{df2_shortname}', index=False, na_rep="")
+    # pd.to_excel(df2_outPath, )会导致excel原有的sheet的数据都丢失;需要通过pd.ExcelWriter(mode='append')
+    with pd.ExcelWriter(df2_outPath, mode='a', if_sheet_exists='replace',engine="openpyxl") as writer:
+        combine_oldyear.to_excel(writer, sheet_name=f'temp{df2_shortname}', index=False, na_rep="")
 
     # # Step2: 今年(新年)做Query,去年(旧年)做List,今年有几个专业是由去年某个专业拆解而来;解决: pd.merge()
-    combine_newyear = pd.merge(df1, combine_oldyear, left_on=['学校代号','专业代号'], right_on=['学校代号',f'{df1_shortname}专业代号'],
+    combine_newyear = pd.merge(df1, combine_oldyear, left_on=['学校代号','专业代号'], right_on=['学校代号',f'{df1_shortname}版专业代号_{df2_shortname}专业'],
                         how='outer', indicator=True, suffixes=(f'_{df1_shortname}',f'_{df2_shortname}'),validate='one_to_many')
+    # 更改关键列名: 关键列名去除今年的suffix,用于下一轮循环;
+    combine_newyear = combine_newyear.rename(columns={f"学校名称_{df1_shortname}":'学校名称',
+                                    f"专业代号_{df1_shortname}":'专业代号',
+                                    f"专业名称_{df1_shortname}":'专业名称',
+                                    f"计划数_{df1_shortname}":'计划数',
+                                    f"分数线_{df1_shortname}":'分数线',
+                                    f"位次_{df1_shortname}":'位次'}) # 列名去除今年的suffix,用于下一轮循环;
+    # '_merge'列中标明了"left_only",'both',"right_only";去除'right_only'行:
+    combine_newyear = combine_newyear[combine_newyear['_merge'] != 'right_only']
     focus_column = [
                 "学校代号",
-                f"学校名称_{df1_shortname}",
-                f"专业代号_{df1_shortname}",
-                f"专业名称_{df1_shortname}",
-                f"计划数_{df1_shortname}",
+                "学校名称",
+                "专业代号",
+                "专业名称",
+                "计划数",
                 f"计划数_{df2_shortname}",
-                f"分数线_{df1_shortname}",
+                "分数线",
                 f"分数线_{df2_shortname}",
-                f"位次_{df1_shortname}",
+                "位次",
                 f"位次_{df2_shortname}",
     ]
     other_columns = diff = list(set(combine_newyear) ^ set(focus_column)) # 提取关注列以外的其它列名;
