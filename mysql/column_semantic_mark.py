@@ -298,21 +298,25 @@ def df2Excel_SemanticIndex(
     time_assumed = time.time() - start_time
     print(f"{df1_shortname}<->{df2_shortname} both spent {time_assumed/60:.2f}min ")
 
-    if os.path.exists(df1_outPath):
-        # mode='append',避免原有的sheet表中数据被清除;
-        with pd.ExcelWriter(df1_outPath, mode="a", if_sheet_exists='replace', engine='openpyxl') as writer:
-            df_query.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
-    else: # 新建文件并写入
-        with pd.ExcelWriter(df1_outPath, mode="w", engine='openpyxl') as writer:
-            df_query.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
+    # 判断文件新建,还是续写;写入指定的excel文件,指定的sheet表中,
+    for path, df in zip([df1_outPath, df2_outPath],[df_query,df_list]):
+        if os.path.exists(path):
+            # mode='append',避免原有的sheet表中数据被清除;
+            params = { 'path': path,
+                        'mode': 'a',
+                        'if_sheet_exists': 'replace',
+                        'engine': 'openpyxl'}
+        else:
+            # 新建文件并写入
+            params = { 'path': path,
+                        'mode': 'w',
+                        'engine': 'openpyxl'}
 
-    if os.path.exists(df2_outPath):
-        # mode='append',避免原有的sheet表中数据被清除;
-        with pd.ExcelWriter(df2_outPath, mode="a", if_sheet_exists='replace', engine='openpyxl') as writer:
-            df_list.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
-    else:
-        with pd.ExcelWriter(df2_outPath, mode="w", engine='openpyxl') as writer:
-            df_list.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
+        with pd.ExcelWriter(**params) as writer:
+            df.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
+
+
+
 
 
 def recover_major(df1_x:pd.Series, df1_index_semantic_column, df2:pd.DataFrame, recover_type:str='name'):
