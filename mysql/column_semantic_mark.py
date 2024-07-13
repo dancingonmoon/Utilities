@@ -8,6 +8,7 @@ from typing import Union, List
 from mysql_handler import config_read
 import os
 import time
+import re
 
 
 def semantic_batch_search(
@@ -345,7 +346,7 @@ def recover_major(df1_x:pd.Series, df1_index_semantic_column, df2:pd.DataFrame, 
 
 if __name__ == "__main__":
     # 准备zhipuai client:
-    config_path_zhipuai = r"e:/Python_WorkSpace/config/zhipuai_SDK.ini"
+    config_path_zhipuai = r"L:/Python_WorkSpace/config/zhipuai_SDK.ini"
     zhipu_apiKey = config_read(
         config_path_zhipuai, section="zhipuai_SDK_API", option1="api_key"
     )
@@ -353,8 +354,8 @@ if __name__ == "__main__":
     # 定义文件名称:
     df1_shortname = "2020" # 今年/新年
     df2_shortname = "2019" # 去年/旧年
-    excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
-    # excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    # excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
     df1_excelPath = excel_path_base.format(df1_shortname,'xls')
     df1_sheetName = "浙江省2020年普通类第一段平行投档分数线表"
     df2_excelPath = excel_path_base.format(df2_shortname,'xlsx')
@@ -362,15 +363,15 @@ if __name__ == "__main__":
     df1_outPath = os.path.splitext(df1_excelPath)[0] + ".xlsx"
     df2_outPath = os.path.splitext(df2_excelPath)[0] + ".xlsx"
 
-    # df1,df2,相互检索对方,对每个大学,匹配专业代号,写入excel文件:
-    df2Excel_SemanticIndex(zhipuai_client=zhipuai_client,
-                     df1_excelPath=df1_excelPath,
-                    df1_sheetName=df1_sheetName,
-                     df2_excelPath=df2_excelPath,
-                    df2_sheetName=df2_sheetName,
-                     df1_outPath=df1_outPath,
-                     df2_outPath=df2_outPath,
-                     sheet_name="semantic")
+    # # df1,df2,相互检索对方,对每个大学,匹配专业代号,写入excel文件:
+    # df2Excel_SemanticIndex(zhipuai_client=zhipuai_client,
+    #                  df1_excelPath=df1_excelPath,
+    #                 df1_sheetName=df1_sheetName,
+    #                  df2_excelPath=df2_excelPath,
+    #                 df2_sheetName=df2_sheetName,
+    #                  df1_outPath=df1_outPath,
+    #                  df2_outPath=df2_outPath,
+    #                  sheet_name="semantic")
 
     # 发现:
     # 2022年与2021年语义比较:
@@ -404,27 +405,26 @@ if __name__ == "__main__":
         lambda x: np.nan if x == -1 else x
     ) # -1转化为Nan,因为agg()不对Nan进行计算
     grouped_df21 = df2.groupby(
-        by=["学校代号", df2_index_semantic_column], sort=False, dropna=False
-    ) # dropna=False 保留Nan行
-    # 使用字典对每列定义函数:
-    combine_oldyear = grouped_df21.agg(
-        {
-            "学校名称": lambda x: x,
-            "专业名称": lambda x: x,
-            "专业代号": 'first',
-            "计划数": lambda x: int(x.sum()),
-            "分数线": lambda x: int(x.mean()),
-            "位次": lambda x: int(x.mean()),
-            df2_score_semantic_column: "min",
-            f'{df1_shortname}版专业名称_{df2_shortname}专业': lambda x: x,
-            f'{df1_shortname}版专业代号_{df2_shortname}专业': 'first',
-        }
-    ).reset_index()
+        by=["学校代号", df2_index_semantic_column], sort=False, dropna=False) # dropna=False 保留Nan行
+    # 使用字典对每列agg()函数;未定义的列缺省是first()
+    aggFunc_dict = {}
+    columns = list(set(df2.columns)^{'学校代号',df2_index_semantic_column}) # 减去groupby的条件列
+    for c in columns:
+        if "名称" in c: # 包括学校名称,专业名称
+            aggFunc_dict[c] = lambda x: x
+        elif "计划数" in c:
+            aggFunc_dict[c] = lambda x: np.nan if pd.isna(x.sum()) else int(x.sum())
+        elif "分数线" in c or "位次" in c:
+            aggFunc_dict[c] = lambda x: np.nan if pd.isna(x.mean()) else int(x.mean())
+        else:
+            aggFunc_dict[c] = "first"
+
+    combine_oldyear = grouped_df21.agg(aggFunc_dict).reset_index()
     # #或使用,pd.NamedAgg: 优点,可以直接定义更改后的列名
     # combine_ = grouped.agg(**{'平均分数线':('分数线', 'mean'),
     #                          '平均位次':('位次','mean')})
     # 列排序:
-    columns = [
+    focus_columns = [
         "学校代号",
         "学校名称",
         "专业代号",
@@ -438,16 +438,23 @@ if __name__ == "__main__":
         df2_score_semantic_column,
     ]
 
-    combine_oldyear = combine_oldyear[columns[:]]
+    focus_columns.extend([c for c in df2.columns if c not in focus_columns and c !='_merge']) # 同时移除"_merge"列,否则再次indicator=True会报错(can't use name of existing column for indicator column)
 
-    # pd.to_excel(df2_outPath, )会导致excel原有的sheet的数据都丢失;需要通过pd.ExcelWriter(mode='append')
-    with pd.ExcelWriter(df2_outPath, mode='a', if_sheet_exists='replace',engine="openpyxl") as writer:
-        combine_oldyear.to_excel(writer, sheet_name=f'temp{df2_shortname}', index=False, na_rep="")
+    combine_oldyear = combine_oldyear[focus_columns[:]]
+
+    # # pd.to_excel(df2_outPath, )会导致excel原有的sheet的数据都丢失;需要通过pd.ExcelWriter(mode='append')
+    # if os.path.exists(df2_outPath):
+    #     params = {'path': df2_outPath, 'mode': 'a', 'if_sheet_exists': 'replace', 'engine': "openpyxl"}
+    # else:
+    #     params = {'path': df2_outPath, 'mode': 'w', 'engine': "openpyxl"}
+    # with pd.ExcelWriter(**params) as writer:
+    #     combine_oldyear.to_excel(writer, sheet_name=f'temp{df2_shortname}', index=False, na_rep="")
 
     # # Step2: 今年(新年)做Query,去年(旧年)做List,今年有几个专业是由去年某个专业拆解而来;解决: pd.merge()
+    # 检查是否有_merge列,有则移除该列, 否则再次indicator=True会报错(can't use name of existing column for indicator column)
     combine_newyear = pd.merge(df1, combine_oldyear, left_on=['学校代号','专业代号'], right_on=['学校代号',f'{df1_shortname}版专业代号_{df2_shortname}专业'],
                         how='outer', indicator=True, suffixes=(f'_{df1_shortname}',f'_{df2_shortname}'),validate='one_to_many')
-    # 更改关键列名: 关键列名去除今年的suffix,用于下一轮循环;
+    # 更改关键列列名: 关键列名去除今年的suffix,用于下一轮循环;
     combine_newyear = combine_newyear.rename(columns={f"学校名称_{df1_shortname}":'学校名称',
                                     f"专业代号_{df1_shortname}":'专业代号',
                                     f"专业名称_{df1_shortname}":'专业名称',
@@ -456,7 +463,7 @@ if __name__ == "__main__":
                                     f"位次_{df1_shortname}":'位次'}) # 列名去除今年的suffix,用于下一轮循环;
     # '_merge'列中标明了"left_only",'both',"right_only";去除'right_only'行:
     combine_newyear = combine_newyear[combine_newyear['_merge'] != 'right_only']
-    focus_column = [
+    focus_columns = [
                 "学校代号",
                 "学校名称",
                 "专业代号",
@@ -468,9 +475,17 @@ if __name__ == "__main__":
                 "位次",
                 f"位次_{df2_shortname}",
     ]
-    other_columns = diff = list(set(combine_newyear) ^ set(focus_column)) # 提取关注列以外的其它列名;
-    focus_column.extend(other_columns)
-    combine_newyear = combine_newyear[focus_column[:]]
+    diff_columns = list(set(combine_newyear.columns)^set(focus_columns) ^ {df1_score_semantic_column,
+                                                                      df1_index_semantic_column,
+                                                                      df2_index_semantic_column,
+                                                                      df2_score_semantic_column}) # 移除不必要显示的列
+    focus_columns.extend(diff_columns)
+    combine_newyear = combine_newyear[focus_columns[:]]
     sheet_name = f'combine{df1_shortname}'
-    with pd.ExcelWriter(df1_outPath, mode="a", if_sheet_exists='replace',engine='openpyxl') as writer:
-        combine_newyear.to_excel(writer, sheet_name=sheet_name,index=False,na_rep="")
+    if os.path.exists(df1_outPath):
+        params = {'path': df1_outPath, 'mode': 'a', 'if_sheet_exists': 'replace', 'engine': "openpyxl"}
+    else:
+        params = {'path': df1_outPath, 'mode': 'w', 'engine': "openpyxl"}
+    with pd.ExcelWriter(**params) as writer:
+        combine_newyear.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
+
