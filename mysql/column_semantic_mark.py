@@ -245,19 +245,16 @@ def df2Excel_SemanticIndex(
     # 检查文件是否存在，并且具有写权限
     for path in path_list:
         if not os.path.exists(path):
-            print(f"{path},文件不存在")
+            print(f"{path}, doesn't exist.")
             return exit(1)
-        if not os.access(path, os.W_OK):
-            print(f"{path},无写权限.")
-            return exit(1)
+
     # 检查xlsx文件是否已经有临时文件打开,从而判断是否EXCEL文件已经打开:
     path_list = [df1_outPath,df2_outPath]
     for path in path_list:
-        if not os.path.exists(path):
-            pass
-        if not os.access(path, os.W_OK):
-            print(f"{path},无写权限.")
-            return exit(1)
+        if os.path.exists(path):
+            if not os.access(path, os.W_OK):
+                print(f"{path},无写权限.")
+                return exit(1)
         dirname, filename = os.path.split(path)
         filename = "~$".join(["", filename])
         temp_path = os.path.join(dirname, filename)
@@ -351,27 +348,27 @@ if __name__ == "__main__":
         config_path_zhipuai, section="zhipuai_SDK_API", option1="api_key"
     )
     zhipuai_client = ZhipuAI(api_key=zhipu_apiKey)
-    # 定义文件名称:
-    df1_shortname = "2020" # 今年/新年
-    df2_shortname = "2019" # 去年/旧年
+    # 定义文件名称: df1与df2的年份需要相邻,并且df1为今年/新年,而df2为去年/旧年;
+    df1_shortname = "2022" # 今年/新年
+    df2_shortname = "2021" # 去年/旧年
     # excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
     excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
     df1_excelPath = excel_path_base.format(df1_shortname,'xls')
-    df1_sheetName = "浙江省2020年普通类第一段平行投档分数线表"
+    df1_sheetName = "tdx2022"
     df2_excelPath = excel_path_base.format(df2_shortname,'xlsx')
     df2_sheetName = f"combine{df2_shortname}"
     df1_outPath = os.path.splitext(df1_excelPath)[0] + ".xlsx"
     df2_outPath = os.path.splitext(df2_excelPath)[0] + ".xlsx"
 
-    # # df1,df2,相互检索对方,对每个大学,匹配专业代号,写入excel文件:
-    # df2Excel_SemanticIndex(zhipuai_client=zhipuai_client,
-    #                  df1_excelPath=df1_excelPath,
-    #                 df1_sheetName=df1_sheetName,
-    #                  df2_excelPath=df2_excelPath,
-    #                 df2_sheetName=df2_sheetName,
-    #                  df1_outPath=df1_outPath,
-    #                  df2_outPath=df2_outPath,
-    #                  sheet_name="semantic")
+    # df1,df2,相互检索对方,对每个大学,匹配专业代号,写入excel文件:
+    df2Excel_SemanticIndex(zhipuai_client=zhipuai_client,
+                     df1_excelPath=df1_excelPath,
+                    df1_sheetName=df1_sheetName,
+                     df2_excelPath=df2_excelPath,
+                    df2_sheetName=df2_sheetName,
+                     df1_outPath=df1_outPath,
+                     df2_outPath=df2_outPath,
+                     sheet_name="semantic")
 
     # 发现:
     # 2022年与2021年语义比较:
@@ -399,7 +396,6 @@ if __name__ == "__main__":
     # 由于每年的专业代号在增减专业后,会重新编号,所以需要以新年(今年)的专业代号为基准,统一今年/旧年的专业代号,才可以合并,今年与旧年的表格
     df2[f'{df1_shortname}版专业代号_{df2_shortname}专业'] = df2.apply(recover_major, args=(df2_index_semantic_column, df1, 'code'), axis=1)
     df1[f'{df2_shortname}版专业代号_{df1_shortname}专业'] = df1.apply(recover_major, args=(df1_index_semantic_column, df2, 'code'), axis=1)
-    # print(df1, df2)
 
     df2[df2_index_semantic_column] = df2[df2_index_semantic_column].apply(
         lambda x: np.nan if x == -1 else x
@@ -408,7 +404,7 @@ if __name__ == "__main__":
         by=["学校代号", df2_index_semantic_column], sort=False, dropna=False) # dropna=False 保留Nan行
     # 使用字典对每列agg()函数;未定义的列缺省是first()
     aggFunc_dict = {}
-    columns = list(set(df2.columns)^{'学校代号',df2_index_semantic_column}) # 减去groupby的条件列
+    columns = list(set(df2.columns)^{'学校代号',df2_index_semantic_column}) # 减除groupby的作为index的条件列
     for c in columns:
         if "名称" in c: # 包括学校名称,专业名称
             aggFunc_dict[c] = lambda x: x
@@ -442,13 +438,13 @@ if __name__ == "__main__":
 
     combine_oldyear = combine_oldyear[focus_columns[:]]
 
-    # # pd.to_excel(df2_outPath, )会导致excel原有的sheet的数据都丢失;需要通过pd.ExcelWriter(mode='append')
-    # if os.path.exists(df2_outPath):
-    #     params = {'path': df2_outPath, 'mode': 'a', 'if_sheet_exists': 'replace', 'engine': "openpyxl"}
-    # else:
-    #     params = {'path': df2_outPath, 'mode': 'w', 'engine': "openpyxl"}
-    # with pd.ExcelWriter(**params) as writer:
-    #     combine_oldyear.to_excel(writer, sheet_name=f'temp{df2_shortname}', index=False, na_rep="")
+    # pd.to_excel(df2_outPath, )会导致excel原有的sheet的数据都丢失;需要通过pd.ExcelWriter(mode='append')
+    if os.path.exists(df2_outPath):
+        params = {'path': df2_outPath, 'mode': 'a', 'if_sheet_exists': 'replace', 'engine': "openpyxl"}
+    else:
+        params = {'path': df2_outPath, 'mode': 'w', 'engine': "openpyxl"}
+    with pd.ExcelWriter(**params) as writer:
+        combine_oldyear.to_excel(writer, sheet_name=f'temp{df2_shortname}', index=False, na_rep="")
 
     # # Step2: 今年(新年)做Query,去年(旧年)做List,今年有几个专业是由去年某个专业拆解而来;解决: pd.merge()
     # 检查是否有_merge列,有则移除该列, 否则再次indicator=True会报错(can't use name of existing column for indicator column)
@@ -488,4 +484,6 @@ if __name__ == "__main__":
         params = {'path': df1_outPath, 'mode': 'w', 'engine': "openpyxl"}
     with pd.ExcelWriter(**params) as writer:
         combine_newyear.to_excel(writer, sheet_name=sheet_name, index=False, na_rep="")
+
+    print(f'3 steps:\n1)向量模型语义匹配\n2){df2_outPath}.temp{df2_shortname}写入\n;3){df1_outPath}写入{sheet_name}\n完成!')
 
