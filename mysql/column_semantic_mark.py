@@ -349,12 +349,12 @@ if __name__ == "__main__":
     )
     zhipuai_client = ZhipuAI(api_key=zhipu_apiKey)
     # 定义文件名称: df1与df2的年份需要相邻,并且df1为今年/新年,而df2为去年/旧年;
-    df1_shortname = "2022" # 今年/新年
-    df2_shortname = "2021" # 去年/旧年
+    df1_shortname = "2023" # 今年/新年
+    df2_shortname = "2022" # 去年/旧年
     # excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
     excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
-    df1_excelPath = excel_path_base.format(df1_shortname,'xls')
-    df1_sheetName = "tdx2022"
+    df1_excelPath = excel_path_base.format(df1_shortname,'xlsx')
+    df1_sheetName = "浙江省2023年普通高校招生普通类第一段平行投档分数线表"
     df2_excelPath = excel_path_base.format(df2_shortname,'xlsx')
     df2_sheetName = f"combine{df2_shortname}"
     df1_outPath = os.path.splitext(df1_excelPath)[0] + ".xlsx"
