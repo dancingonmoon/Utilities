@@ -54,30 +54,39 @@ def connect_mysql(
 
 
 def df_to_mysql_upon_connection(
-    connection, df: pd.DataFrame, database: str, w2table: str
+    connection, df: pd.DataFrame, database: str, w2table: str, with_Index:bool=False,
 ):
     """
     将一个DataFrame写入MySQL数据库;1)表名,列名,全部加上了反引号;2)如果出现缺失值Nan,则转换成SQL的NULL；3)如果主键出现重复值,则跳过该行数据;
+    df.columns应包含列名与MySQL.table中的字段对应
     connection: 连接到MySQL数据库的connection;connection = mysql.connector.connect(**config)
     df: 待写入的DataFrame数据;
     database: 写入的数据库名;
     w2table: 写入的表名;
+    with_Index: 是否将行号,做为Index列,写入Mysql(MySQL有Index列,同时DataFrame中没有该列)
     """
     cursor = connection.cursor()
     rows_sum = 0
     columns = df.columns
     columns_sum = len(columns)
-    for row in df.itertuples():
-        field_name = ", ".join([f"`{c}`" for c in columns])  # 列名需加反引号
+    # 列名需加反引号
+    field_name = ", ".join([f"`{c}`" for c in columns])
+    if with_Index:
+        row_start = 0
+        field_name = ", ".join(['Index', field_name])
+    else:
+        row_start = 1
+    for row in df.itertuples(): # row为namedtuple
         field_value = []
-        for i in range(1, columns_sum + 1 ): # row[0]是Index, 主键, 不需要写入 # 标记,此处处理Index方式,会出现不匹配,再查;
-            c = row[i]
-            if isinstance(c, str):
-                field_value.append(f'"{c}"')  # 当字段值为字符串时,加上引号;
-            elif pd.isna(c):
+        for i in range(row_start, columns_sum+1):
+            v = row[i]  # 获取命名元组值
+            if isinstance(v, str):
+                v= v.replace('"','\\"') #由于引号太多,导致出错, 需要处理引号;
+                field_value.append(f'"{v}"')  # 当字段值为字符串时,加上引号;,
+            elif pd.isna(v):
                 field_value.append("NULL")  # 缺失值Nan时, 改成SQL可以识别的NULL,表示空值
             else:
-                field_value.append(f"{c}")
+                field_value.append(f"{v}")
         field_value = ", ".join(field_value)
         insert_query = f"""
                                 INSERT INTO {database}.`{w2table}`  
@@ -249,19 +258,19 @@ def addColumn_mysqlTable(connection:mysql.connector, database: str, table: str, 
 if __name__ == "__main__":
 
     # 读取Excel文件
-    df_shortname = "2023"
-    # excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
-    excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    df_shortname = "2022"
+    excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    # excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
     df_excelPath = excel_path_base.format(df_shortname, 'xlsx')
-    sheet_name = "combine2023"
-    df = pd.read_excel( df_excelPath, sheet_name=sheet_name )
+    sheet_name = f"combine{df_shortname}"
+    df = pd.read_excel( df_excelPath, sheet_name=sheet_name)
     # df = df.fillna() # 缺失值空缺
 
     # 列名:
     print(df.columns)
 
     # MySQL数据库配置
-    config_path = "l:/Python_WorkSpace/config/mysql.ini"
+    config_path = "e:/Python_WorkSpace/config/mysql.ini"
     user, pw = config_read(
         config_path, section="MySQL", option1="user", option2="password"
     )
@@ -273,16 +282,16 @@ if __name__ == "__main__":
     # create_table_query = f"CREATE TABLE {df.index.name} ({', '.join([f'{col} VARCHAR(255)' for col in df.columns])});"
     # cursor.execute(create_table_query)
 
-    # 批量添加MySQL表中的字段:
+    # # 批量添加MySQL表中的字段:
     # columns = df.columns
-    # varchar_n = 40
+    # varchar_n = 50
     # for column in columns:
     #     if "学校名称" in column or "_merge" in column:
     #         datatype="str"
-    #         varchar_n = 50
+    #         varchar_n = 256
     #     elif "专业名称" in column:
     #         datatype = "str"
-    #         varchar_n = 128
+    #         varchar_n = 156
     #     else :
     #         datatype='int'
     #         unsigned=True
@@ -291,7 +300,7 @@ if __name__ == "__main__":
 
     # 有字符串长度超出database.table.字段的定义要求,需要修改字段的varchar()长度
     # 将数据写入MySQL表
-    w2table = "combine2023"
+    w2table = sheet_name
 
     # DataFrame写入MySQL数据库的某个Table
     df2mysql(df=df, w2table=w2table, **config)
