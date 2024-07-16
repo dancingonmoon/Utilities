@@ -58,12 +58,13 @@ def df_to_mysql_upon_connection(
 ):
     """
     将一个DataFrame写入MySQL数据库;1)表名,列名,全部加上了反引号;2)如果出现缺失值Nan,则转换成SQL的NULL；3)如果主键出现重复值,则跳过该行数据;
+    仅当MySQL的表有主键,此时有唯一值时,才可以判断是否重复;如果DataFrame没有Index列,而MySQL有Index字段,则根据行号,添加Index列到MySQL表.
     df.columns应包含列名与MySQL.table中的字段对应
     connection: 连接到MySQL数据库的connection;connection = mysql.connector.connect(**config)
     df: 待写入的DataFrame数据;
     database: 写入的数据库名;
     w2table: 写入的表名;
-    with_Index: 是否将行号,做为Index列,写入Mysql(MySQL有Index列,同时DataFrame中没有该列)
+    with_Index: 是否将行号,做为Index列,写入Mysql(此时: MySQL有Index列,同时DataFrame中没有该列)
     """
     cursor = connection.cursor()
     rows_sum = 0
@@ -73,7 +74,7 @@ def df_to_mysql_upon_connection(
     field_name = ", ".join([f"`{c}`" for c in columns])
     if with_Index:
         row_start = 0
-        field_name = ", ".join(['Index', field_name])
+        field_name = ", ".join(['`Index`', field_name])
     else:
         row_start = 1
     for row in df.itertuples(): # row为namedtuple
@@ -81,7 +82,7 @@ def df_to_mysql_upon_connection(
         for i in range(row_start, columns_sum+1):
             v = row[i]  # 获取命名元组值
             if isinstance(v, str):
-                v= v.replace('"','\\"') #由于引号太多,导致出错, 需要处理引号;
+                v= v.replace('"','\\"') #由于引号太多,导致出错, 需要转义引号;
                 field_value.append(f'"{v}"')  # 当字段值为字符串时,加上引号;,
             elif pd.isna(v):
                 field_value.append("NULL")  # 缺失值Nan时, 改成SQL可以识别的NULL,表示空值
@@ -125,12 +126,15 @@ def df2mysql(
     database: str = None,
     df: pd.DataFrame = None,
     w2table: str = None,
+    with_Index:bool = False ,
 ):
     """
     A:新建一个MySQL的连接, 当连接错误,或者Database不存在,退出;
     B: 将一个DataFrame写入MySQL数据库;1)表名,列名,全部加上了反引号;2)如果出现缺失值Nan,则转换成SQL的NULL；3)如果主键出现重复值,则跳过该行数据;
+    仅当MySQL的表有主键,此时有唯一值时,才可以判断是否重复;如果DataFrame没有Index列,而MySQL有Index字段,则根据行号,添加Index列到MySQL表.
     database: 写入的数据库名;
     w2table: 写入的表名;
+    with_Index: 是否将行号,做为Index列,写入Mysql(此时: MySQL有Index列,同时DataFrame中没有该列)
     """
     connection = connect_mysql(
         host=host, user=user, password=password, database=database
@@ -138,7 +142,7 @@ def df2mysql(
     if isinstance(connection, mysql.connector.Error):
         print(connection)
         return connection
-    df_to_mysql_upon_connection(connection, df, database, w2table)
+    df_to_mysql_upon_connection(connection, df, database, w2table, with_Index=with_Index)
     # 关闭连接
     connection.close()
 
@@ -258,19 +262,36 @@ def addColumn_mysqlTable(connection:mysql.connector, database: str, table: str, 
 if __name__ == "__main__":
 
     # 读取Excel文件
-    df_shortname = "2022"
-    excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
-    # excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    df_shortname = "2023"
+    # excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
     df_excelPath = excel_path_base.format(df_shortname, 'xlsx')
     sheet_name = f"combine{df_shortname}"
     df = pd.read_excel( df_excelPath, sheet_name=sheet_name)
     # df = df.fillna() # 缺失值空缺
 
     # 列名:
-    print(df.columns)
+    # print(df.columns)
+    # # ----------------------------------------------------------------
+    # # 更改列序,重新生成combine2023_sort
+    # columns_sort = ['学校代号','学校名称','专业代号','专业名称',
+    #                 '分数线', '分数线_2022', '分数线_2021', '分数线_2020','分数线_2019', '分数线_2018',
+    #                 '位次', '位次_2022', '位次_2021', '位次_2020', '位次_2019', '位次_2018',
+    #                 '计划数','计划数_2022','计划数_2021','计划数_2020','计划数_2019','计划数_2018',
+    #                 '2023版专业名称_2022专业','2022版专业名称_2021专业','2021版专业名称_2020专业','2020版专业名称_2019专业','2019版专业名称_2018专业',
+    #                 '学校名称_2022','学校名称_2021','学校名称_2020','学校名称_2019','学校名称_2018']
+    # df = df[columns_sort[:]]
+    # sheet_name_sort = 'combine2023_sort'
+    # if os.path.exists(df_excelPath):
+    #     params = {'path': df_excelPath, 'mode': 'a', 'if_sheet_exists': 'replace', 'engine': "openpyxl"}
+    # else:
+    #     params = {'path': df_excelPath, 'mode': 'w', 'engine': "openpyxl"}
+    # with pd.ExcelWriter(**params) as writer:
+    #     df.to_excel(writer, sheet_name=sheet_name_sort, index=False, na_rep="")
+    # # ----------------------------------------------------------------
 
     # MySQL数据库配置
-    config_path = "e:/Python_WorkSpace/config/mysql.ini"
+    config_path = "l:/Python_WorkSpace/config/mysql.ini"
     user, pw = config_read(
         config_path, section="MySQL", option1="user", option2="password"
     )
@@ -286,24 +307,23 @@ if __name__ == "__main__":
     # columns = df.columns
     # varchar_n = 50
     # for column in columns:
-    #     if "学校名称" in column or "_merge" in column:
+    #     if "名称" in column :
     #         datatype="str"
     #         varchar_n = 256
-    #     elif "专业名称" in column:
+    #     elif "_merge" in column:
     #         datatype = "str"
-    #         varchar_n = 156
+    #         varchar_n = 20
     #     else :
     #         datatype='int'
     #         unsigned=True
     #
     #     addColumn_mysqlTable(connector,database=database, table=sheet_name,columns=column,datatype=datatype,varchar_n=varchar_n, null=True,unsigned=True)
 
-    # 有字符串长度超出database.table.字段的定义要求,需要修改字段的varchar()长度
     # 将数据写入MySQL表
     w2table = sheet_name
 
     # DataFrame写入MySQL数据库的某个Table
-    df2mysql(df=df, w2table=w2table, **config)
+    df2mysql(df=df, w2table=w2table, with_Index=True,  **config)
 
     # # 读出指定database.table, 写入DataFrame:
     # read_table = "2023"
