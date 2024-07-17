@@ -274,19 +274,19 @@ if __name__ == "__main__":
     # print(df.columns)
     # # ----------------------------------------------------------------
     # # 更改列序,重新生成combine2023_sort
-    # path = excel_path_base.format('高考统计分析2018_2023','xlsx')
-    # columns_sort = ['学校代号','学校名称','专业代号','专业名称',
-    #                 '分数线', '分数线_2022', '分数线_2021', '分数线_2020','分数线_2019', '分数线_2018',
-    #                 '位次', '位次_2022', '位次_2021', '位次_2020', '位次_2019', '位次_2018',
-    #                 '计划数','计划数_2022','计划数_2021','计划数_2020','计划数_2019','计划数_2018',
-    #                 '2023版专业名称_2022专业','2022版专业名称_2023专业',
-    #                 '2022版专业名称_2021专业','2021版专业名称_2022专业',
-    #                 '2021版专业名称_2020专业','2020版专业名称_2021专业',
-    #                 '2020版专业名称_2019专业','2019版专业名称_2020专业',
-    #                 '2019版专业名称_2018专业','2018版专业名称_2019专业',
-    #                 '学校名称_2022','学校名称_2021','学校名称_2020','学校名称_2019','学校名称_2018']
-    # df = df[columns_sort[:]]
-    # sheet_name_sort = 'combine2023_sort'
+    path = excel_path_base.format('高考统计分析2018_2023','xlsx')
+    columns_sort = ['学校代号','学校名称','专业代号','专业名称',
+                    '分数线', '分数线_2022', '分数线_2021', '分数线_2020','分数线_2019', '分数线_2018',
+                    '位次', '位次_2022', '位次_2021', '位次_2020', '位次_2019', '位次_2018',
+                    '计划数','计划数_2022','计划数_2021','计划数_2020','计划数_2019','计划数_2018',
+                    '2023版专业名称_2022专业','2022版专业名称_2023专业',
+                    '2022版专业名称_2021专业','2021版专业名称_2022专业',
+                    '2021版专业名称_2020专业','2020版专业名称_2021专业',
+                    '2020版专业名称_2019专业','2019版专业名称_2020专业',
+                    '2019版专业名称_2018专业','2018版专业名称_2019专业',
+                    '学校名称_2022','学校名称_2021','学校名称_2020','学校名称_2019','学校名称_2018']
+    df = df[columns_sort[:]]
+    sheet_name_sort = 'combine2023_sort'
     # if os.path.exists(path):
     #     params = {'path': path, 'mode': 'a', 'if_sheet_exists': 'replace', 'engine': "openpyxl"}
     # else:
@@ -296,7 +296,7 @@ if __name__ == "__main__":
     # # ----------------------------------------------------------------
 
     # MySQL数据库配置
-    config_path = "l:/Python_WorkSpace/config/mysql.ini"
+    config_path = "e:/Python_WorkSpace/config/mysql.ini"
     user, pw = config_read(
         config_path, section="MySQL", option1="user", option2="password"
     )
@@ -308,24 +308,24 @@ if __name__ == "__main__":
     # create_table_query = f"CREATE TABLE {df.index.name} ({', '.join([f'{col} VARCHAR(255)' for col in df.columns])});"
     # cursor.execute(create_table_query)
 
-    # # 批量添加MySQL表中的字段:
-    # columns = df.columns
-    # varchar_n = 50
-    # for column in columns:
-    #     if "名称" in column :
-    #         datatype="str"
-    #         varchar_n = 256
-    #     elif "_merge" in column:
-    #         datatype = "str"
-    #         varchar_n = 20
-    #     else :
-    #         datatype='int'
-    #         unsigned=True
-    #
-    #     addColumn_mysqlTable(connector,database=database, table=sheet_name,columns=column,datatype=datatype,varchar_n=varchar_n, null=True,unsigned=True)
+    # 批量添加MySQL表中的字段:
+    columns = df.columns
+    varchar_n = 50
+    for column in columns:
+        if "名称" in column :
+            datatype="str"
+            varchar_n = 256
+        elif "_merge" in column:
+            datatype = "str"
+            varchar_n = 20
+        else :
+            datatype='int'
+            unsigned=True
+
+        addColumn_mysqlTable(connector,database=database, table=sheet_name_sort,columns=column,datatype=datatype,varchar_n=varchar_n, null=True,unsigned=True)
 
     # 将数据写入MySQL表
-    w2table = sheet_name
+    w2table = sheet_name_sort
 
     # DataFrame写入MySQL数据库的某个Table
     df2mysql(df=df, w2table=w2table, with_Index=True,  **config)
