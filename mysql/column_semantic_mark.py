@@ -343,18 +343,18 @@ def recover_major(df1_x:pd.Series, df1_index_semantic_column, df2:pd.DataFrame, 
 
 if __name__ == "__main__":
     # 准备zhipuai client:
-    config_path_zhipuai = r"L:/Python_WorkSpace/config/zhipuai_SDK.ini"
+    config_path_zhipuai = r"e:/Python_WorkSpace/config/zhipuai_SDK.ini"
     zhipu_apiKey = config_read(
         config_path_zhipuai, section="zhipuai_SDK_API", option1="api_key"
     )
     zhipuai_client = ZhipuAI(api_key=zhipu_apiKey)
     # 定义文件名称: df1与df2的年份需要相邻,并且df1为今年/新年,而df2为去年/旧年;
-    df1_shortname = "2023" # 今年/新年
-    df2_shortname = "2022" # 去年/旧年
-    # excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
-    excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
-    df1_excelPath = excel_path_base.format(df1_shortname,'xlsx')
-    df1_sheetName = "浙江省2023年普通高校招生普通类第一段平行投档分数线表"
+    df1_shortname = "2024" # 今年/新年
+    df2_shortname = "2023" # 去年/旧年
+    excel_path_base = "E:/Working Documents/装修/丁翊弘学习/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    # excel_path_base = "L:/丁翊弘/高考/浙江省{}年普通高校招生普通类第一段平行投档分数线表.{}"
+    df1_excelPath = excel_path_base.format(df1_shortname,'xls')
+    df1_sheetName = "tdx2024"
     df2_excelPath = excel_path_base.format(df2_shortname,'xlsx')
     df2_sheetName = f"combine{df2_shortname}"
     df1_outPath = os.path.splitext(df1_excelPath)[0] + ".xlsx"
@@ -487,3 +487,26 @@ if __name__ == "__main__":
 
     print(f'3 steps:\n1)向量模型语义匹配\n2){df2_outPath}.temp{df2_shortname}写入\n;3){df1_outPath}写入{sheet_name}\n完成!')
 
+    # # ----------------------------------------------------------------
+    # # 更改列序,重新生成combine2023_sort
+    path = excel_path_base.format('高考统计分析2018_2024', 'xlsx')
+    columns_sort = ['学校代号', '学校名称', '专业代号', '专业名称',
+                    '分数线', '分数线_2023', '分数线_2022', '分数线_2021', '分数线_2020', '分数线_2019', '分数线_2018',
+                    '位次', '位次_2023','位次_2022', '位次_2021', '位次_2020', '位次_2019', '位次_2018',
+                    '计划数','计划数_2023', '计划数_2022', '计划数_2021', '计划数_2020', '计划数_2019', '计划数_2018',
+                    '2024版专业名称_2023专业', '2023版专业名称_2024专业',
+                    '2023版专业名称_2022专业', '2022版专业名称_2023专业',
+                    '2022版专业名称_2021专业', '2021版专业名称_2022专业',
+                    '2021版专业名称_2020专业', '2020版专业名称_2021专业',
+                    '2020版专业名称_2019专业', '2019版专业名称_2020专业',
+                    '2019版专业名称_2018专业', '2018版专业名称_2019专业',
+                    '学校名称_2022', '学校名称_2021', '学校名称_2020', '学校名称_2019', '学校名称_2018']
+    df = combine_newyear[columns_sort[:]]
+    sheet_name_sort = 'combine2024_sort'
+    if os.path.exists(path):
+        params = {'path': path, 'mode': 'a', 'if_sheet_exists': 'replace', 'engine': "openpyxl"}
+    else:
+        params = {'path': path, 'mode': 'w', 'engine': "openpyxl"}
+    with pd.ExcelWriter(**params) as writer:
+        df.to_excel(writer, sheet_name=sheet_name_sort, index=False, na_rep="")
+    # # ----------------------------------------------------------------
