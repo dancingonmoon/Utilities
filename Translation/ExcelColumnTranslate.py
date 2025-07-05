@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import numpy as np
 import requests
 import random
 from hashlib import md5
@@ -7,7 +7,7 @@ import pandas as pd
 import configparser
 from typing import Union
 import os
-from MStranslateAPI_Word import MStranslation_API, MStranslation_dynamicDictionary_API
+from Translation_API import MStranslation_API, MStranslation_dynamicDictionary_API
 from enum import Enum
 
 
@@ -86,10 +86,21 @@ def DFColumnTranslate_baidu(
     """
     Translate = []
     for value in DFColumn.values:
-        if value[0] != "":
-            Translate.append(
-                BaiduTranslateAPI(str(value[0]), appid, appkey, from_lang, to_lang)
+        x = value[0]
+        if x != "":
+            if isinstance(x, (int, float)):
+                if np.isinf(x) or np.isnan(x):
+                    Translate.append('')
+                else:
+                    Translate.append(
+                BaiduTranslateAPI(str(x), appid, appkey, from_lang, to_lang)
             )
+
+            else:
+                Translate.append(
+                BaiduTranslateAPI(x, appid, appkey, from_lang, to_lang)
+            )
+
         else:
             Translate.append(value)
     Column_name = DFColumn.keys()[0]
@@ -115,7 +126,15 @@ def DFColumnTranslate_MS(
     """
     # DataFrame转换成列表:
     DFColumn_list = DFColumn.values.tolist()
-    DFColumn_list = [l[0] for l in DFColumn_list]
+    # 替换 NaN、Infinity 和 -Infinity 为 None 或其他默认值
+    for n, x in enumerate(DFColumn_list):
+        x = x[0]
+        DFColumn_list[n] = x
+        if isinstance(x, (int,float)):
+            if np.isinf(x) or np.isnan(x):
+                DFColumn_list[n] = ''
+            else:
+                DFColumn_list[n] = str(x)
 
     Translate, response = MStranslation_dynamicDictionary_API(
         DFColumn_list,
@@ -173,6 +192,7 @@ def ExcelColumnTranslate(
     ms_subscribeKey=None,
     baidu_appid=None,
     baidu_appkey=None,
+    dynamic_dict: dict = False,
     from_lang: Union[str, None] = "auto",
     to_lang="en",
     ExcelPath: str = None,
@@ -261,6 +281,7 @@ def ExcelColumnTranslate(
             ms_subscribeKey=ms_subscribeKey,
             from_lang=from_lang,
             to_lang=to_lang,
+            dynamic_dict=dynamic_dict,
         )
         if "error" in TransData:
             print(TransData["error"])
@@ -280,18 +301,18 @@ if __name__ == "__main__":
     from_lang_ms = "zh-Hans"  # 百度: 'auto', 微软: None; 自动辨识语言;当双语混杂时,需要指定语言,否则会有漏译情况;
     from_lang_bd = "zh"  # 百度: 'auto', 微软: None; 自动辨识语言;当双语混杂时,需要指定语言,否则会有漏译情况;
     to_lang = "en"  # 百度:( 中文: zh;文言文: wyw;日本: jp; --> 伊朗语: ir; 波斯语);微软: "zh-Hans"中文简体
-    ExcelPath = r"E:/Working Documents/Eastcom/Russia/Murom/Terminal/T8200 SKD BOM.xlsx"
-    readSheet = "2Murom"
-    readHeader = 4
+    ExcelPath = r"L:/temp\Eastcom/小型化TETRA集群通信项目系统配置及报价_250304.xlsx"
+    readSheet = "三基站+交换中心250122"
+    readHeader = 2
     readStartRow = None
     readCol = 3  # 也可以用列表读取多列
-    nrows = 20
+    nrows = 45
     write2Sheet = "Sheet3"
     write2Row = 2
     write2Col = 1
 
-    config_path = r"e:/Python_WorkSpace/config/baidu_OpenAPI.ini"
-    MSconfig_path = r"E:/Python_WorkSpace/config/Azure_Resources.ini"
+    config_path = r"l:/Python_WorkSpace/config/baidu_OpenAPI.ini"
+    MSconfig_path = r"l:/Python_WorkSpace/config/Azure_Resources.ini"
 
     baidu_appid, baidu_appkey = config_read(
         config_path, section="baidu_OpenAPI", option1="appid", option2="appkey"
@@ -303,6 +324,9 @@ if __name__ == "__main__":
         option2=None,
     )
 
+    dynamic_dict = {"东信": "Eastcom",
+                    "东方通信": "Eastcom",}
+
     # # 百度翻译引擎:
     ExcelColumnTranslate(translate_engine=translate_engine.baidu, baidu_appid=baidu_appid, baidu_appkey=baidu_appkey,
                          from_lang=from_lang_bd, to_lang=to_lang, ExcelPath=ExcelPath,
@@ -310,7 +334,7 @@ if __name__ == "__main__":
                          nrows=nrows,
                          write2Sheet=write2Sheet, write2Row=write2Row, write2Col=write2Col)
     # # 微软翻译引擎:
-    ExcelColumnTranslate(translate_engine=translate_engine.microsoft, ms_subscribeKey=ms_subscribeKey,
+    ExcelColumnTranslate(translate_engine=translate_engine.microsoft, ms_subscribeKey=ms_subscribeKey, dynamic_dict=dynamic_dict,
                          baidu_appid=baidu_appid,
                          baidu_appkey=baidu_appkey, from_lang=from_lang_ms, to_lang=to_lang,
                          ExcelPath=ExcelPath,
