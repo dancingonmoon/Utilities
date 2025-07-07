@@ -7,7 +7,7 @@ import pandas as pd
 import configparser
 from typing import Union
 import os
-from Translation_API import MStranslation_API, MStranslation_dynamicDictionary_API
+from Translation_API import MStranslation_dynamicDictionary_API, BaiduTranslateAPI
 from enum import Enum
 
 
@@ -36,39 +36,39 @@ def config_read(
 
 
 # Generate salt and sign
-def make_md5(s, encoding="utf-8"):
-    return md5(s.encode(encoding)).hexdigest()
+# def make_md5(s, encoding="utf-8"):
+#     return md5(s.encode(encoding)).hexdigest()
 
 
 # 定义百度翻译ＡＰＩ函数
-def BaiduTranslateAPI(text, appid, appkey, from_lang="auto", to_lang="en"):
-    """
-    baidu_appid: 百度openAPI baidu_appid
-    baidu_appkey: 百度openAPI baidu_appkey
-    For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21
-    """
-    salt = random.randint(32768, 65536)
-    s = "".join([appid, text, str(salt), appkey])
-    sign = make_md5(s)
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    payload = {
-        "appid": appid,
-        "q": text,
-        "from": from_lang,
-        "to": to_lang,
-        "salt": salt,
-        "sign": sign,
-    }
-    endpoint = "http://api.fanyi.baidu.com"
-    path = "/api/trans/vip/translate"
-    url = "".join([endpoint, path])
-    r = requests.post(url, params=payload, headers=headers)
-    result = r.json()
-    try:
-        trans_result = result["trans_result"][0]["dst"]
-        return trans_result
-    except Exception as e:
-        return result
+# def BaiduTranslateAPI(text, appid, appkey, from_lang="auto", to_lang="en"):
+#     """
+#     baidu_appid: 百度openAPI baidu_appid
+#     baidu_appkey: 百度openAPI baidu_appkey
+#     For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21
+#     """
+#     salt = random.randint(32768, 65536)
+#     s = "".join([appid, text, str(salt), appkey])
+#     sign = make_md5(s)
+#     headers = {"Content-Type": "application/x-www-form-urlencoded"}
+#     payload = {
+#         "appid": appid,
+#         "q": text,
+#         "from": from_lang,
+#         "to": to_lang,
+#         "salt": salt,
+#         "sign": sign,
+#     }
+#     endpoint = "http://api.fanyi.baidu.com"
+#     path = "/api/trans/vip/translate"
+#     url = "".join([endpoint, path])
+#     r = requests.post(url, params=payload, headers=headers)
+#     result = r.json()
+#     try:
+#         trans_result = result["trans_result"][0]["dst"]
+#         return trans_result
+#     except Exception as e:
+#         return result
 
     # 第一个方括号为字典的指定key取值,第二个方括号为之前取出的值为列表,列表的第一个元素,
     # 第三个方括号为取出的第一个元素继续为字典,取字典的值
@@ -121,14 +121,14 @@ def DFColumnTranslate_MS(
     """
     微软翻译API下的单列文本翻译, 输入DataFrame列,翻译后,返回DataFrame列,包括列名翻译;空白文本自动跳过;
     DFColum: DataFrame单列
-    from_lang: 源语言; 当from_lang 不包含时, 微软翻译器自动检测语言; (注:'auto'不支持)
-    to_lang:目标语言
+    from_lang: 源语言; 当from_lang 不包含(None)时, 微软翻译器自动检测语言; (注:'auto'不支持)
+    to_lang: 目标语言
     """
     # DataFrame转换成列表:
     DFColumn_list = DFColumn.values.tolist()
     # 替换 NaN、Infinity 和 -Infinity 为 None 或其他默认值
     for n, x in enumerate(DFColumn_list):
-        x = x[0]
+        x = x[0] # 此处暂且处理单列，所以，提出提取第一个。
         DFColumn_list[n] = x
         if isinstance(x, (int,float)):
             if np.isinf(x) or np.isnan(x):
@@ -136,7 +136,7 @@ def DFColumnTranslate_MS(
             else:
                 DFColumn_list[n] = str(x)
 
-    Translate, response = MStranslation_dynamicDictionary_API(
+    translate, response = MStranslation_dynamicDictionary_API(
         DFColumn_list,
         dynamic_dict=dynamic_dict,
         lang_in=from_lang,
@@ -146,7 +146,7 @@ def DFColumnTranslate_MS(
     if "error" in response:
         return response
 
-    Column_name = DFColumn.keys()[0]
+    Column_name = DFColumn.keys()[0] # 此处暂且处理单列，所以，提出提取第一个。
     if isinstance(Column_name, str):
         Column_name, response = MStranslation_dynamicDictionary_API(
             Column_name,
@@ -158,8 +158,8 @@ def DFColumnTranslate_MS(
         if "error" in response:
             return response
 
-    Translate = pd.DataFrame(Translate, columns=[Column_name])
-    return Translate
+    translate = pd.DataFrame(translate, columns=[Column_name])
+    return translate
 
 
 def Write2Excel(
@@ -301,18 +301,18 @@ if __name__ == "__main__":
     from_lang_ms = "zh-Hans"  # 百度: 'auto', 微软: None; 自动辨识语言;当双语混杂时,需要指定语言,否则会有漏译情况;
     from_lang_bd = "zh"  # 百度: 'auto', 微软: None; 自动辨识语言;当双语混杂时,需要指定语言,否则会有漏译情况;
     to_lang = "en"  # 百度:( 中文: zh;文言文: wyw;日本: jp; --> 伊朗语: ir; 波斯语);微软: "zh-Hans"中文简体
-    ExcelPath = r"L:/temp\Eastcom/小型化TETRA集群通信项目系统配置及报价_250304.xlsx"
-    readSheet = "三基站+交换中心250122"
-    readHeader = 2
+    ExcelPath = r"E:/Working Documents/Eastcom/Russia/Igor/专网/CTK/ТЗ по TETRA Eng_Eastcom250707.xlsx"
+    readSheet = "2载波"
+    readHeader = 1
     readStartRow = None
-    readCol = 3  # 也可以用列表读取多列
-    nrows = 45
-    write2Sheet = "Sheet3"
+    readCol = 9  # 也可以用列表读取多列
+    nrows = 14
+    write2Sheet = "2carrier"
     write2Row = 2
-    write2Col = 1
+    write2Col = 7
 
-    config_path = r"l:/Python_WorkSpace/config/baidu_OpenAPI.ini"
-    MSconfig_path = r"l:/Python_WorkSpace/config/Azure_Resources.ini"
+    config_path = r"e:/Python_WorkSpace/config/baidu_OpenAPI.ini"
+    MSconfig_path = r"e:/Python_WorkSpace/config/Azure_Resources.ini"
 
     baidu_appid, baidu_appkey = config_read(
         config_path, section="baidu_OpenAPI", option1="appid", option2="appkey"
@@ -325,14 +325,17 @@ if __name__ == "__main__":
     )
 
     dynamic_dict = {"东信": "Eastcom",
-                    "东方通信": "Eastcom",}
+                    "东方通信": "Eastcom",
+                    "集群系统":"trunking system",
+                    "调度系统":"dispatching system",
+                    "调度":"dispatching",}
 
     # # 百度翻译引擎:
-    ExcelColumnTranslate(translate_engine=translate_engine.baidu, baidu_appid=baidu_appid, baidu_appkey=baidu_appkey,
-                         from_lang=from_lang_bd, to_lang=to_lang, ExcelPath=ExcelPath,
-                         readSheet=readSheet, readHeader=readHeader, readStartRow=readStartRow, readCol=readCol,
-                         nrows=nrows,
-                         write2Sheet=write2Sheet, write2Row=write2Row, write2Col=write2Col)
+    # ExcelColumnTranslate(translate_engine=translate_engine.baidu, baidu_appid=baidu_appid, baidu_appkey=baidu_appkey,
+    #                      from_lang=from_lang_bd, to_lang=to_lang, ExcelPath=ExcelPath,
+    #                      readSheet=readSheet, readHeader=readHeader, readStartRow=readStartRow, readCol=readCol,
+    #                      nrows=nrows,
+    #                      write2Sheet=write2Sheet, write2Row=write2Row, write2Col=write2Col )
     # # 微软翻译引擎:
     ExcelColumnTranslate(translate_engine=translate_engine.microsoft, ms_subscribeKey=ms_subscribeKey, dynamic_dict=dynamic_dict,
                          baidu_appid=baidu_appid,
@@ -340,9 +343,11 @@ if __name__ == "__main__":
                          ExcelPath=ExcelPath,
                          readSheet=readSheet, readHeader=readHeader, readStartRow=readStartRow, readCol=readCol,
                          nrows=nrows,
-                         write2Sheet=write2Sheet, write2Row=write2Row, write2Col=write2Col + 1)
+                         write2Sheet=write2Sheet, write2Row=write2Row, write2Col=write2Col)
 
-    # 从效果上看, 百度翻译比微软翻译速度慢很多,但是效果似乎在列表类中文文本上,似乎比微软要好一些;可能百度在理解中文上更胜一筹.
+    # 从效果上看, 百度翻译比微软翻译速度慢很多(因为百度每个字符串调用，而MS列表输入，一次调用),但是效果似乎在列表类中文文本上,似乎比微软要好一些;可能百度在理解中文上更胜一筹.
+    # MS的翻译写入时，不知道为什么，列标题写入会是写入col+1的位置，需要查bug;
+    # 待完成多列批量翻译与写入的问题
     print("翻译完成!")
 
 
