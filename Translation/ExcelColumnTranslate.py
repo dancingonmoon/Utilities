@@ -167,12 +167,12 @@ def Write2Excel(
 ):
     """
     将DataFrame追加写入已经存在的Excel,写入指定的sheet, 从指定的行列号开始写完整的DataFrame块;
-    DataFrame: 写入的DataFrame
-    Write2Path: 已经存在的Excel的完整路径;
-    Write2Sheet: 待写入的Excel的sheet名;可以是新sheet;
-    Write2Row: 写入的起始行,默认为0;
-    Write2Col: 写入的起始列,默认为0,
-    Writeheader: bool类型, 是否写入标题行,默认为True;
+    :param DFColumn: 写入的DataFrame
+    :param Write2Path: 已经存在的Excel的完整路径;
+    :param Write2Sheet: 待写入的Excel的sheet名;可以是新sheet;
+    :param Write2Row: 写入的起始行,默认为0;
+    :param Write2Col: 写入的起始列,默认为0,
+    :param Writeheader: bool类型, 是否写入标题行,默认为True;
     """
     with pd.ExcelWriter(
         Write2Path, mode="a", engine="openpyxl", if_sheet_exists="overlay"
@@ -207,22 +207,22 @@ def ExcelColumnTranslate(
 ):
     """
     Excel中读取单列,或者block,并调用百度翻译API,翻译后,写入已经存在的Excel,写入指定的sheet, 从指定的行列号追加写入完整的列或者块;
-    translate_engine: 枚举变量: 缺省为microsoft翻译引擎(1), 其次为baidu翻译引擎(2)
-    ms_subscribeKey: 微软翻译API subscription key
-    baidu_appid: 百度openAPI baidu_appid
-    baidu_appkey: 百度openAPI baidu_appkey
-    from_lang: 源语言
-    to_lang: 目标语言(For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21)
-    ExcelPath: 待读取,翻译以及写入的Excel的完整路径;
-    readSheet: 待读取的sheet name;
-    readHeader: 待读取标题行行号(Excel的行号,从1开始计数); 缺省None
-    readStartRow: 待读取的起始行(Excel的行号,从1开始计数); 缺省1;
+    :param translate_engine: 枚举变量: 缺省为microsoft翻译引擎(1), 其次为baidu翻译引擎(2)
+    :param ms_subscribeKey: 微软翻译API subscription key
+    :param baidu_appid: 百度openAPI baidu_appid
+    :param baidu_appkey: 百度openAPI baidu_appkey
+    :param from_lang: 源语言
+    :param to_lang: 目标语言(For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21)
+    :param ExcelPath: 待读取,翻译以及写入的Excel的完整路径;
+    :param readSheet: 待读取的sheet name;
+    :param readHeader: 待读取标题行行号(Excel的行号,从1开始计数); 缺省None
+    :param readStartRow: 待读取的起始行(Excel的行号,从1开始计数); 缺省1;
         当readHeader不为None时,readStartRow=None表示从readHeader以下开始
-    readCol: 待读取的起始列号或者列号的列表;(Excel的列号,从1开始计数)
-    nrows: 待读取行的数量; 初始值None,表示读取整列;
-    write2Sheet: 待写入的Excel的sheet名;可以是新sheet;
-    write2Row: 写入的起始行,(不包括标题列);默认为2;
-    write2Col: 写入的起始列,默认为1,(Excel列号,从0开始计数)
+    :param readCol: 待读取的起始列号或者列号的列表;(Excel的列号,从1开始计数)
+    :param nrows: 待读取行的数量; 初始值None,表示读取整列;
+    :param write2Sheet: 待写入的Excel的sheet名;可以是新sheet;
+    :param write2Row: 写入的起始行,(不包括标题列);默认为2;
+    :param write2Col: 写入的起始列,默认为1,(Excel列号,从0开始计数)
     """
     # 检查文件是否存在，并且具有写权限
     if not os.path.exists(ExcelPath):
@@ -291,7 +291,12 @@ def ExcelColumnTranslate(
         return
 
     Write2Excel(
-        TransData, ExcelPath, write2Sheet, write2Row, write2Col - 1, writeheader
+        DFColumn=TransData,
+        Write2Path=ExcelPath,
+        Write2Sheet=write2Sheet,
+        Write2Row=write2Row,
+        Write2Col=write2Col - 1,
+        Writeheader=writeheader
     )  # -2 因为index与行号差1
     print(f"翻译并写入完成! 请查看{ExcelPath}.{write2Sheet}")
 
@@ -301,15 +306,15 @@ if __name__ == "__main__":
     from_lang_ms = "zh-Hans"  # 百度: 'auto', 微软: None; 自动辨识语言;当双语混杂时,需要指定语言,否则会有漏译情况;
     from_lang_bd = "zh"  # 百度: 'auto', 微软: None; 自动辨识语言;当双语混杂时,需要指定语言,否则会有漏译情况;
     to_lang = "en"  # 百度:( 中文: zh;文言文: wyw;日本: jp; --> 伊朗语: ir; 波斯语);微软: "zh-Hans"中文简体
-    ExcelPath = r"E:/Working Documents/Eastcom/Russia/Igor/专网/CTK/ТЗ по TETRA Eng_Eastcom250707.xlsx"
-    readSheet = "2载波"
+    ExcelPath = r"E:/Working Documents/Eastcom/Russia/Igor/专网/CTK/ТЗ по TETRA_配置_250707.xlsx"
+    readSheet = "8载波"
     readHeader = 1
     readStartRow = None
-    readCol = 9  # 也可以用列表读取多列
-    nrows = 14
-    write2Sheet = "2carrier"
+    readCol = 2  # 也可以用列表读取多列
+    nrows = 4
+    write2Sheet = "test"
     write2Row = 2
-    write2Col = 7
+    write2Col = 2
 
     config_path = r"e:/Python_WorkSpace/config/baidu_OpenAPI.ini"
     MSconfig_path = r"e:/Python_WorkSpace/config/Azure_Resources.ini"
@@ -348,6 +353,6 @@ if __name__ == "__main__":
     # 从效果上看, 百度翻译比微软翻译速度慢很多(因为百度每个字符串调用，而MS列表输入，一次调用),但是效果似乎在列表类中文文本上,似乎比微软要好一些;可能百度在理解中文上更胜一筹.
     # MS的翻译写入时，不知道为什么，列标题写入会是写入col+1的位置，需要查bug;
     # 待完成多列批量翻译与写入的问题
-    print("翻译完成!")
+    # print("翻译完成!")
 
 
