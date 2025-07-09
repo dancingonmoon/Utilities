@@ -2,7 +2,6 @@
 import requests
 import random
 from hashlib import md5
-import urllib.parse
 import uuid
 
 import re
@@ -20,9 +19,9 @@ def make_md5(s, encoding="utf-8"):
 # 定义百度翻译ＡＰＩ函数
 def BaiduTranslateAPI(text, appid, appkey, from_lang="auto", to_lang="en"):
     """
-    baidu_appid: 百度openAPI baidu_appid
-    baidu_appkey: 百度openAPI baidu_appkey
     For list of language codes, please refer to `https://api.fanyi.baidu.com/doc/21
+    :param baidu_appid: 百度openAPI baidu_appid
+    :param baidu_appkey: 百度openAPI baidu_appkey
     """
     salt = random.randint(32768, 65536)
     s = "".join([appid, text, str(salt), appkey])
@@ -114,16 +113,14 @@ def MStranslation_API(
 ):
     """
     指定文本的微软翻译:
-    args:
-        text: 待翻译的原文本,或者列表;
-        lang_in : 翻译前语言; 当None或者不包含时,自动辨识语言
-        lang_out: 翻译后语言;可以列表形式,增加多种语言,例如:['ru','zh-Hans']
-        subscription_key: 微软翻译API的key;
-    out:
+    :param text: 待翻译的原文本,或者列表;
+    :param lang_in: 翻译前语言; 当None或者不包含时,自动辨识语言
+    :param lang_out: 翻译后语言;可以列表形式,增加多种语言,例如:['ru','zh-Hans']
+    :param subscription_key: 微软翻译API的key;
+    :return
         trans_text: 即翻译后的文本字典列表,列表中每个字典包含了单个语种,或者多个语种的'text':'trans_text'的键值对;
         response: API接口输出,当翻译出错时,观察错误信息;
     """
-
     # Add your subscription key and endpoint
     subscription_key = subscription_key
     endpoint = "https://api.cognitive.microsofttranslator.com"  # 认知服务
@@ -189,7 +186,7 @@ def MStranslation_dynamicDictionary_API(
         subscription_key="pls input your MStranslation API key",
 ):
     """
-    指定文本的微软翻译
+    指定文本的微软翻译,可以输入动态词典
     :param text: 待翻译的原文本,或者列表;
     :param dynamic_dict: 动态词典,包含有专有词汇,产品名称,人物人名等,已经有固定翻译的词汇,例:{'莫言':'Mr.Moyan'};缺省值:False,表示不需要动态词典;
     :param lang_in: 翻译前语言;当None或者不包含时,自动辨识语言

@@ -6,7 +6,7 @@ import configparser
 from typing import Union
 import os
 from Translation_API import MStranslation_dynamicDictionary_API, BaiduTranslateAPI, BaiduTranslateAPI_domain, \
-    Qwen_MT_func, Term
+    Qwen_MT_func
 from enum import Enum
 
 
@@ -39,10 +39,10 @@ def DF_Translate_baidu(
         source_df: pandas.DataFrame, appid, appkey, from_lang: str = "auto", to_lang: str = "en"
 ):
     """
-    百度翻译API下的单列文本翻译, 输入DataFrame列,翻译后,返回DataFrame列,包括列名翻译;空白文本自动跳过;
-    DFColum: DataFrame block
-    from_lang: 源语言; 'auto'时,自动检测语言
-    to_lang:目标语言
+    百度翻译API下的Dataframe block翻译, 输入DataFrame block,翻译后,返回DataFrame block,包括列名翻译;空白文本自动跳过;
+    :param source_df: DataFrame block
+    :param from_lang: 源语言; 'auto'时,自动检测语言
+    :param to_lang:目标语言
     """
     translate_df = source_df.copy()
     for source_col_name in source_df.columns:
@@ -79,9 +79,9 @@ def DF_Translate_MS(
 ):
     """
     微软翻译API下的文本翻译, 输入DataFrame块,翻译后,返回DataFrame块,包括列名翻译;空白文本未自动跳过;
-    source_df: 待翻译原文的DataFrame块
-    from_lang: 源语言; 当from_lang 不包含(None)时, 微软翻译器自动检测语言; (注:'auto'不支持)
-    to_lang: 目标语言
+    :param source_df: 待翻译原文的DataFrame块
+    :param from_lang: 源语言; 当from_lang 不包含(None)时, 微软翻译器自动检测语言; (注:'auto'不支持)
+    :param to_lang: 目标语言
     """
     translate_df = source_df.copy()
     # DataFrame可能为多列：
@@ -166,7 +166,7 @@ def Excel_block_Translate(
 ):
     """
     Excel中读取单列,或者block,并调用百度翻译API,翻译后,写入已经存在的Excel,写入指定的sheet, 从指定的行列号追加写入完整的列或者块;
-    当readCol为列表时，readCol与write2Col的长度必须一致，读写列一一对应
+    当readCol为列表时，readCol与write2Col两个列表的长度必须一致，读写列一一对应
     :param translate_engine: 枚举变量: 缺省为microsoft翻译引擎(1), 其次为baidu翻译引擎(2)
     :param ms_subscribeKey: 微软翻译API subscription key
     :param baidu_appid: 百度openAPI baidu_appid
@@ -314,7 +314,7 @@ if __name__ == "__main__":
     # 从效果上看, 百度翻译比微软翻译速度慢很多(因为百度每个字符串调用，而MS列表输入，一次调用),但是效果似乎在列表类中文文本上,似乎比微软要好一些;可能百度在理解中文上更胜一筹.
 
     # print("翻译完成!")
-    # 翻译句子, 从效果上看，MS明显优于百度翻译,似乎也略微优于Qwen_MT
+    # 翻译长句子, 从效果上看，MS明显优于百度翻译,似乎也略微优于Qwen_MT
     txt = """
     具有群组呼叫、紧急呼叫等快速指挥调度能力；支持用户优先级的设置；
     通过动态重组实现灵活的多级别分组调度指挥功能；集语音、数据、图像和视频的多业务传输能力；
